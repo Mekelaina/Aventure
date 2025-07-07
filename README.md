@@ -11,4 +11,5 @@ This is also a *<em>student project</em>*, if for some reason you wish to use, f
 
 <br><br><hr>
 Dependancies:
+- [discord.py](https://discordpy.readthedocs.io/en/stable/intro.html)
 - [psycopg](https://pypi.org/project/psycopg/)
