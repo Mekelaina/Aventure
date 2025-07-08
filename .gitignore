@@ -1,2 +1,4 @@
 /bot_token.txt
 /src/aventure_config.py
+__pycache__
+/discord.log
