@@ -55,6 +55,8 @@ async def dm(ctx: commands.Context):
     # get user from context
     user = ctx.author
     
+    
+
     if await is_in_guild(ctx):
         # checks if the user does not have a dm channel aready
         # and makes one if needed. should rarely ever be called
@@ -63,8 +65,13 @@ async def dm(ctx: commands.Context):
             await user.create_dm()
         
         await user.send(f'Hello~ Type \'{config.COMMAND_PREFIX}help\' for getting started!')
+
+        # deletes the users command from server chat to avoid clutter
+        await ctx.message.delete(delay=0.5)
     else:
         await user.send("We're already in DMs, silly")
+    
+    
 
 
 # run the bot
