@@ -83,7 +83,7 @@ async def dm(interaction: discord.Interaction):
     # else:
     #     await user.send("We're already in DMs, silly")
     
-    swallow_user_input(interaction)       
+    await swallow_user_input(interaction)       
 
 @bot.tree.command(
     name='help',
