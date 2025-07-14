@@ -67,20 +67,21 @@ async def ping(ctx: commands.Context):
         name='dm',
         description='Send a new DM from the Bot to you. \n The game is played in DMs'
 )
-async def dm(interaction: discord.Integration):
+async def dm(interaction: discord.Interaction):
     # get user from context
     user = interaction.user
 
-    if await is_in_guild():
+    if await is_in_guild(interaction):
         # checks if the user does not have a dm channel aready
         # and makes one if needed. should rarely ever be called
         # according to docs (https://discordpy.readthedocs.io/en/stable/api.html#discord.User.create_dm)
         if user.dm_channel == None:
             await user.create_dm()
         
+        await interaction.response.send_message(f'DM sent')
         await user.send(f'Hello~ Type \'{config.COMMAND_PREFIX}help\' for getting started!')
-    else:
-        await user.send("We're already in DMs, silly")
+    # else:
+    #     await user.send("We're already in DMs, silly")
     
     swallow_user_input(interaction)       
 
