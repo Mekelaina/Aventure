@@ -12,13 +12,17 @@ class ExtEnum(Enum):
 
     # gets all enum values as a list
     @classmethod
-    def getValues(self) -> list[str]:
-        return list(map(lambda c: c.value, self))
+    def getValues(cls) -> list[str]:
+        return list(map(lambda c: c.value, cls))
     
     # gets all enum names as a list
     @classmethod
-    def getNames(self) -> list[str]:
-        return list(map(lambda c: c.name, self))
+    def getNames(cls) -> list[str]:
+        return list(map(lambda c: c.name, cls))
+    
+    @classmethod
+    def getValuesFromList(cls, names: list[str]) -> list[str]:
+        return [cls[name] for name in names]
     
 
 class Tables(ExtEnum):
