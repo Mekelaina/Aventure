@@ -1,5 +1,8 @@
 import sqlite3
+import typing
 from pathlib import Path
+
+from db_queries import *
 
 # Gets the filepath to the database location
 # in an OS independent way
@@ -15,26 +18,42 @@ def getDatabasePath() -> Path:
 # no easy way to check if all tables exist,
 # so always running is safest bet.
 def initializeDB() -> None:
-    pass
+    print('Initializing DB')
+    writeAllToDB([USERS_TABLE, ITEMS_TABLE])
+    print('DB Initalization Complete')
 
 # read from the DB and returns query result
 # as a list of whatever was in the DB
 # !!!should always be try/catched somewhere!!!
-def readFromDB(query: str) -> list[sqlite3.Any]:
-    pass
+def readFromDB(query: str) -> list[typing.Any]:
+    with sqlite3.connect(getDatabasePath()) as conn:
+        cursor: sqlite3.Cursor = conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
 
 # write to the DB. 
 # if no error, the write was successful
 # !!!should always be try/catched somewhere!!!
 def writeToDB(insert: str) -> None:
-    pass
-
-def debug():
     with sqlite3.connect(getDatabasePath()) as conn:
         cursor: sqlite3.Cursor = conn.cursor()
-        cursor.execute('SELECT sqlite_version();')
-        result: list[sqlite3.Any] = cursor.fetchall()
-        print(result)
+        cursor.execute(insert)
+
+# preform multiple writes to DB with one connection
+# !!!should always be try/catched somewhere!!!
+def writeAllToDB(insert: list[str]) -> None:
+    with sqlite3.connect(getDatabasePath()) as conn:
+        cursor: sqlite3.Cursor = conn.cursor()
+        for i in insert:
+            cursor.execute(i)
+
+def debug():
+    try:
+        initializeDB()
+    
+    except sqlite3.Error as err:
+        print('Error occurred -', err)
     
     # try:
     #     sqliteConnection = sqlite3.connect(q)
