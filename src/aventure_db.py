@@ -2,7 +2,7 @@ import sqlite3
 import typing
 from pathlib import Path
 
-from db_queries import *
+from db_queries import Tables
 
 # Gets the filepath to the database location
 # in an OS independent way
@@ -12,6 +12,14 @@ def getDatabasePath() -> Path:
     dbdir.resolve()
     return dbdir
 
+# checks if expected database file exists
+# returns true if yes, else false
+def doesDBExist() -> bool:
+    db_file = Path(getDatabasePath())
+    if db_file.is_file():
+        return True
+    return False
+
 # initializes the DB when bot launches.
 # if DB doesnt exist, its created and initialized
 # if DB does exist, then queries do nothing.
@@ -19,13 +27,40 @@ def getDatabasePath() -> Path:
 # so always running is safest bet.
 def initializeDB() -> None:
     print('Initializing DB')
-    writeAllToDB([USERS_TABLE, ITEMS_TABLE])
+    
+    if doesDBExist():
+        result, missing = verifyTablesPresent()
+        if not result:
+            writeAllToDB(Tables.getValuesFromList(missing))
+            # TODO populate missing tables if applicable            
+    else:
+        writeAllToDB(Tables.getValues())
+    
     print('DB Initalization Complete')
 
-# read from the DB and returns query result
-# as a list of whatever was in the DB
+# checks if the DB contains all Tables in the Tables enum
+# true if yes, false if no
+def verifyTablesPresent() -> tuple[bool, list[str]]:
+    res = True
+    missing = list()
+
+    with sqlite3.connect(getDatabasePath()) as conn:
+        cursor: sqlite3.Cursor = conn.cursor()
+        for table in Tables.getNames():
+            # this query only returns int 1 if table is present, int 0 otherwise
+            cursor.execute(f'SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type="table" AND name="{table}");')
+            if cursor.fetchone()[0] == 0:
+                res = False
+                missing.append(table)
+    return (res, missing)
+
+
+# queries the DB and returns all results as a list
+# depending on the number of results, memory could be an issues
+# but given were only dealing with one player at a time
+# it *shouldnt* be an issue
 # !!!should always be try/catched somewhere!!!
-def readFromDB(query: str) -> list[typing.Any]:
+def readAllFromDB(query: str) -> list[typing.Any]:
     with sqlite3.connect(getDatabasePath()) as conn:
         cursor: sqlite3.Cursor = conn.cursor()
         cursor.execute(query)
@@ -48,12 +83,15 @@ def writeAllToDB(insert: list[str]) -> None:
         for i in insert:
             cursor.execute(i)
 
+
 def debug():
-    try:
-        initializeDB()
+   
+    print(Tables.getValuesFromList(['USERS', 'TEST']))
+    # try:
+    #     print(verifyTablesPresent())
     
-    except sqlite3.Error as err:
-        print('Error occurred -', err)
+    # except sqlite3.Error as err:
+    #     print('Error occurred -', err)
     
     # try:
     #     sqliteConnection = sqlite3.connect(q)
