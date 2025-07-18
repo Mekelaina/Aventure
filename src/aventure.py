@@ -9,6 +9,7 @@ from discord import app_commands
 import logging
 
 import aventure_config as config
+import aventure_db as db
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -49,6 +50,7 @@ async def swallow_user_input(ctx: commands.Context | discord.Interaction) -> boo
 @bot.event
 async def on_ready():
     await bot.tree.sync()
+    await db.initializeDB()
     print(f'We have logged in as {bot.user}')
 
 # ping command. really used for debugging. will be removed later

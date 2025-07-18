@@ -25,16 +25,23 @@ def doesDBExist() -> bool:
 # if DB does exist, then queries do nothing.
 # no easy way to check if all tables exist,
 # so always running is safest bet.
-def initializeDB() -> None:
+async def initializeDB() -> None:
     print('Initializing DB')
     
     if doesDBExist():
+        print("A")
         result, missing = verifyTablesPresent()
-        if not result:
-            writeAllToDB(Tables.getValuesFromList(missing))
-            # TODO populate missing tables if applicable            
+        if result == False:
+            try:
+                writeAllToDB(Tables.getValuesFromList(missing))
+                # TODO populate missing tables if applicable    
+            except sqlite3.Error as error:
+                print('Error occurred -', error)
     else:
-        writeAllToDB(Tables.getValues())
+        try:
+            writeAllToDB(Tables.getValues())
+        except sqlite3.Error as error:
+                print('Error occurred -', error)
     
     print('DB Initalization Complete')
 
@@ -84,36 +91,34 @@ def writeAllToDB(insert: list[str]) -> None:
             cursor.execute(i)
 
 
-def debug():
+# def debug():
    
-    print(Tables.getValuesFromList(['USERS', 'TEST']))
-    # try:
-    #     print(verifyTablesPresent())
+#     initializeDB()
+#     # try:
+#     #     print(verifyTablesPresent())
     
-    # except sqlite3.Error as err:
-    #     print('Error occurred -', err)
+#     # except sqlite3.Error as err:
+#     #     print('Error occurred -', err)
     
-    # try:
-    #     sqliteConnection = sqlite3.connect(q)
-    #     cursor = sqliteConnection.cursor()
-    #     print('DB Init')
+#     # try:
+#     #     sqliteConnection = sqlite3.connect(q)
+#     #     cursor = sqliteConnection.cursor()
+#     #     print('DB Init')
 
-    #     query = 'SELECT sqlite_version();'
-    #     cursor.execute(query)
+#     #     query = 'SELECT sqlite_version();'
+#     #     cursor.execute(query)
 
-    #     result = cursor.fetchall()
-    #     print('SQLite Version is {}'.format(result[0][0]))
+#     #     result = cursor.fetchall()
+#     #     print('SQLite Version is {}'.format(result[0][0]))
         
-    #     cursor.close()
+#     #     cursor.close()
     
-    # except sqlite3.Error as error:
-    #     print('Error occurred -', error)
+#     # except sqlite3.Error as error:
+#     #     print('Error occurred -', error)
     
-    # finally:
-    #     if sqliteConnection:
-    #         sqliteConnection.close()
-    #         print('SQLite Connection closed')
+#     # finally:
+#     #     if sqliteConnection:
+#     #         sqliteConnection.close()
+#     #         print('SQLite Connection closed')
 
-
-
-debug()
+# debug()
