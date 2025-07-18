@@ -1,0 +1,10 @@
+
+# All the queries regularly made as constants
+
+# === Table Constructors === #
+USERS_TABLE = '''CREATE TABLE IF NOT EXISTS "USERS" (
+	"USER_ID"	INTEGER NOT NULL UNIQUE,
+	"DISCORD_ID"	INTEGER NOT NULL UNIQUE COLLATE BINARY,
+	PRIMARY KEY("USER_ID" AUTOINCREMENT)
+) STRICT;'''
+
