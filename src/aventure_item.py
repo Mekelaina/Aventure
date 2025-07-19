@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from itertools import count
-from enum import Enum
+from enum import IntEnum
 
 
 # Item Definitions
-class Usecase(Enum):
+class Usecase(IntEnum):
     '''Usecase Enum an Item can have.\n
     NO_USE: 0, BUFF_ATK: 1, BUFF_DEF: 2, HEAL_USER: 3, HURT_ENEMY: 4'''
     NO_USE     = 0
@@ -13,7 +13,7 @@ class Usecase(Enum):
     HEAL_USER  = 3
     HURT_ENEMY = 4
 
-class Equipable(Enum):
+class Equipable(IntEnum):
     '''What equipment slot an Item can be equiped in\n
     NO_EQUIP: 0, WEAPON: 1, ARMOR: 2, OFFHAND: 3, CONSUMABLE: 4'''
     NO_EQUIP   = 0

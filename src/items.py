@@ -1,12 +1,14 @@
 from aventure_item import AventureItem, Usecase, Equipable
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 #This file holds all the created game item objects and their ID's
 
-class ItemID(Enum):
+class ItemID(IntEnum):
     NULL_ITEM = 0
     RUSTY_SWORD = auto()
     SMALL_POTION = auto()
+
+
 
 
 GAME_ITEMS = {
