@@ -2,6 +2,8 @@ from enum import IntEnum
 from dataclasses import field
 import copy
 
+
+
 class Direction(IntEnum):
     NORTH = 0
     SOUTH = 1
@@ -10,11 +12,10 @@ class Direction(IntEnum):
 
 class Door():
     
-    # Takes a direction, door status, and adjacent room.
+    # Takes a door status, and adjacent room.
     # no door = open: false, adjacent = -1
     # locked door = open: false, adjacent > -1
-    def __init__(self, dir: Direction, open: bool = False, next: int = -1):
-        self.dir: Direction = dir
+    def __init__(self, open: bool = False, next: int = -1):
         self.open: bool = open
         self.next: int = next
     
@@ -26,9 +27,12 @@ class Door():
             self.open = True
             return True
         return False
-    
+
 
 class Room():
+       '''Room'''
+       NO_SWITCH: tuple[int, Direction] =  (-1, Direction.NORTH)
+       
        def __init__(self, id: int = 0,
                     layout: dict[Direction : Door, 
                 Direction : Door, Direction : Door, Direction : Door] = {},
@@ -36,7 +40,8 @@ class Room():
                     desc: str = '',
                     ascii: str = '',
                     enemies: list[int] = [],
-                    isExit: bool = False
+                    isExit: bool = False,
+                    switch: tuple[int, Direction] = NO_SWITCH
                 ):
            #room id
            self.id: int = id
@@ -58,6 +63,12 @@ class Room():
            self.hasEnemies: bool = True if enemies else False
            #is this the exit room of the map
            self.isExit: bool = isExit
+           #does this room have a switch
+           #default is a defined NO_SWITCH
+           #if tuple
+           self.hasSwitch: bool = False if switch == Room.NO_SWITCH else True
+           #room id and direction of the door the switch opens
+           self.switch: tuple[int, Direction]
 
 
 
@@ -72,14 +83,51 @@ class Map():
     def __init__(self, id: int = 0, rooms: list[Room] = []):
         self.id: int = id
         #list of rooms. keep sequential. first in list is start
-        self.rooms: list[Room]
+        self.rooms: list[Room] = rooms
     
     # return type is in quotes to get around classes not being defined
     #until class finishes delcaration. python quirk..
     def newMap(self) -> 'Map':
         '''Returns a deepcopy of self. 
         useful for editable copies of static constants'''     
-        return copy.deepcopy(self) 
+        return copy.deepcopy(self)
     
+def debug():
+    m = Map(0, rooms=[
+        Room(id=0, layout={
+            Direction.NORTH : Door(False, 1),
+            Direction.EAST : Door(True, 2),
+            Direction.SOUTH : Door(False, 3),
+            Direction.WEST : Door(True, 4)
+            }),
+        Room(id=1, layout={
+            Direction.NORTH : Door(False, -1),
+            Direction.EAST : Door(False, -1),
+            Direction.SOUTH : Door(True, 0),
+            Direction.WEST : Door(False, -1)
+        }),
+        Room(id=2, layout={
+            Direction.NORTH : Door(False, -1),
+            Direction.EAST : Door(True, 0),
+            Direction.SOUTH : Door(False, -1),
+            Direction.WEST : Door(False, -1)
+        }),
+        Room(id=3, layout={
+            Direction.NORTH : Door(True, 0),
+            Direction.EAST : Door(False, -1),
+            Direction.SOUTH : Door(False, -1),
+            Direction.WEST : Door(False, -1)
+        }),
+        Room(id=4, layout={
+            Direction.NORTH : Door(False, -1),
+            Direction.EAST : Door(False, -1),
+            Direction.SOUTH : Door(False, -1),
+            Direction.WEST : Door(True, 0)
+        })
+    ])
+
+    print(m.rooms[0])
     
-    
+#debug()
+        
+

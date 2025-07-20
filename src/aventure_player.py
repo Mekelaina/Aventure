@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from enum import IntEnum
 from items import *
+from aventure_map import Direction
 
 
 # current state of player
-class State(IntEnum):
+class GameState(IntEnum):
     NORUN_MENU = 0
     RUN_DUNGEON = 1
     RUN_COMBAT = 2
@@ -29,10 +30,13 @@ class Data:
     maxHealth: int  = 10
     currHealth: int = 10
     isAlive: bool = 1
-    attack: int = 1
-    defence: int = 1
+    baseAttack: int = 1
+    baseDefence: int = 1
     exp: int = 0
     gold: int = 0
+    lastMove: Direction = Direction.NORTH
+    map: int = -1
+    room: int = -1
 
 
 @dataclass
@@ -44,6 +48,12 @@ class InvItem():
     def to_bytes(self) -> bytes:
         return bytes([self.itemID, self.count])
         
+class EquipSlot(IntEnum):
+    WEAPON = 0
+    ARMOR = 1
+    OFFHAND = 2
+    CONSUMEABLE_1 = 3
+    CONSUMEABLE_2 = 4
 
 @dataclass
 class Equipment():
@@ -53,7 +63,7 @@ class Equipment():
     consumeable1: InvItem
     consumeable2: InvItem
 
-    def equipItem(self, item: InvItem, slot: int):
+    def equipItem(self, item: InvItem, slot: EquipSlot):
         match slot:
             case EquipSlot.WEAPON:
                 self.weapon = item
@@ -65,8 +75,30 @@ class Equipment():
                 self.consumeable1 = item
             case EquipSlot.CONSUMEABLE_2:
                 self.consumeable2 = item
-            case _:
-                pass
+            
+    
+    def isEquiped(self, slot: EquipSlot) -> bool:
+        match slot:
+            case EquipSlot.WEAPON:
+                if self.weapon == Player.EMPTY_INV:
+                    return False
+                return True
+            case EquipSlot.ARMOR:
+                if self.armor == Player.EMPTY_INV:
+                    return False
+                return True
+            case EquipSlot.OFFHAND:
+                if self.offhand == Player.EMPTY_INV:
+                    return False
+                return True
+            case EquipSlot.CONSUMEABLE_1:
+                if self.consumeable1 == Player.EMPTY_INV:
+                    return False
+                return True
+            case EquipSlot.CONSUMEABLE_2:
+                if self.consumeable2 == Player.EMPTY_INV:
+                    return False
+                return True
     
     #return form for writing to DB
     def serialize(self) -> tuple[int, int, int, int, int, int, int]:
@@ -93,12 +125,7 @@ class Equipment():
         self.armor.count = 0
         self.offhand.count = 0
 
-class EquipSlot(IntEnum):
-    WEAPON = 0
-    ARMOR = 1
-    OFFHAND = 2
-    CONSUMEABLE_1 = 3
-    CONSUMEABLE_2 = 4
+
 
 class PlayerInventory:
 
@@ -201,7 +228,7 @@ class Player:
     def __init__(self):
         self.data: Data = Data()
         self.stats: GlobalStats = GlobalStats()
-        self.state: State = State.NORUN_MENU
+        self.state: GameState = GameState.NORUN_MENU
         self.inv: PlayerInventory = PlayerInventory()
         self.equipment: Equipment = Equipment(
             self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV)
@@ -219,25 +246,27 @@ class Player:
             self.data.currHealth = self.data.maxHealth
     
     def equipItem(self, itemID: int, count: int, slot: EquipSlot) -> bool:
-        itemData: AventureItem = getItem(itemID)
-        if self.canEquipItem(itemData.equip, slot):
-            self.equipment.equipItem(InvItem(itemID, count))
+        itemData: AventureItem = getEquipable(itemID)
+        if self.canEquipItem(itemData, slot):
+            self.equipment.equipItem(InvItem(itemID, count), slot)
             return True
         return False
     
-    def unequipItem(self, slot: int) -> None:
+    def unequipItem(self, slot: EquipSlot) -> None:
         self.equipment.equipItem(self.EMPTY_INV, slot)
          
-    def canEquipItem(self, itemEquipVal: int, itemSlot: int) -> bool:
+    def canEquipItem(self, itemEquipVal: Equipable, itemSlot: EquipSlot) -> bool:
         self.VALID_EQUIPS
-        match (itemEquipVal, itemSlot):
+        match (itemEquipVal.value, itemSlot.value):
             case (x, y) if (x, y) in self.VALID_EQUIPS:
                 return True
             case _:
                 return False
     
-    def addExp(self, amt: int):
+    #returns true upon a levelup
+    def addExp(self, amt: int) -> bool:
         self.data.exp += amt
+        return False
         # TODO: add level up mechanics
     
     def addGold(self, amt: int):
@@ -253,6 +282,18 @@ class Player:
         else:
             self.data.gold -= amt
             return True
+    
+    def getAttack(self) -> int:
+        if self.equipment.isEquiped(EquipSlot.WEAPON):
+            return self.data.baseAttack + getMod(self.equipment.weapon.itemID)
+        else:
+            return self.data.baseAttack
+    
+    def getDeffence(self) -> int:
+        if self.equipment.isEquiped(EquipSlot.ARMOR):
+            return self.data.baseDefence + getMod(self.equipment.armor.itemID)
+        else:
+            return self.data.baseDefence
             
 def debug():
    p = PlayerInventory()
@@ -272,5 +313,5 @@ def debug():
 
     
 
-debug()
+#debug()
     

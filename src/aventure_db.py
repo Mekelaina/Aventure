@@ -25,7 +25,7 @@ def doesDBExist() -> bool:
 # if DB does exist, then queries do nothing.
 # no easy way to check if all tables exist,
 # so always running is safest bet.
-async def initializeDB() -> None:
+def initializeDB() -> None:
     print('Initializing DB')
     
     if doesDBExist():
@@ -67,20 +67,26 @@ def verifyTablesPresent() -> tuple[bool, list[str]]:
 # but given were only dealing with one player at a time
 # it *shouldnt* be an issue
 # !!!should always be try/catched somewhere!!!
-def readAllFromDB(query: str) -> list[typing.Any]:
+def readAllFromDB(query: str, parameters=()) -> list[typing.Any]:
     with sqlite3.connect(getDatabasePath()) as conn:
         cursor: sqlite3.Cursor = conn.cursor()
         cursor.execute(query)
         return cursor.fetchall()
+    
+def readFromDB(query: str, parameters=()) -> typing.Any:
+    with sqlite3.connect(getDatabasePath()) as conn:
+        cursor: sqlite3.Cursor = conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchone()
 
 
 # write to the DB. 
 # if no error, the write was successful
 # !!!should always be try/catched somewhere!!!
-def writeToDB(insert: str) -> None:
+def writeToDB(insert: str, parameters=()) -> None:
     with sqlite3.connect(getDatabasePath()) as conn:
         cursor: sqlite3.Cursor = conn.cursor()
-        cursor.execute(insert)
+        cursor.execute(insert, parameters)
 
 # preform multiple writes to DB with one connection
 # !!!should always be try/catched somewhere!!!
@@ -91,34 +97,39 @@ def writeAllToDB(insert: list[str]) -> None:
             cursor.execute(i)
 
 
-# def debug():
+def debug():
    
-#     initializeDB()
-#     # try:
-#     #     print(verifyTablesPresent())
-    
-#     # except sqlite3.Error as err:
-#     #     print('Error occurred -', err)
-    
-#     # try:
-#     #     sqliteConnection = sqlite3.connect(q)
-#     #     cursor = sqliteConnection.cursor()
-#     #     print('DB Init')
+    initializeDB()
+    try:
 
-#     #     query = 'SELECT sqlite_version();'
-#     #     cursor.execute(query)
+        writeToDB(f'INSERT INTO "USERS" VALUES(null,{181})')
+        res = readAllFromDB(f'SELECT * FROM "USERS"')
+        print(res)
+    except sqlite3.Error as error:
+        print('Error occurred -', error)
 
-#     #     result = cursor.fetchall()
-#     #     print('SQLite Version is {}'.format(result[0][0]))
+    # sqliteConnection: sqlite3.Connection
+    # try:
+    #     sqliteConnection = sqlite3.connect(getDatabasePath())
+    #     cursor = sqliteConnection.cursor()
+    #     print('DB Init')
+
+    #     testID: int = 180
+    #     print(Tables.getNames())
+    #     query = '''INSERT INTO 'USERS' VALUES(?)'''
+    #     cursor.execute(query, testID)
+
+    #     result = cursor.fetchone()
+    #     print(type(result[0]))
+    #     print(result)
+    #     print('SQLite Version is {}'.format(result[0][0]))
         
-#     #     cursor.close()
-    
-#     # except sqlite3.Error as error:
-#     #     print('Error occurred -', error)
-    
-#     # finally:
-#     #     if sqliteConnection:
-#     #         sqliteConnection.close()
-#     #         print('SQLite Connection closed')
+    #     cursor.close()
+    # except sqlite3.Error as error:
+    #     print('Error occurred -', error)
+    # finally:
+    #     if sqliteConnection:
+    #         sqliteConnection.close()
+    #         print('SQLite Connection closed')
 
-# debug()
+debug()

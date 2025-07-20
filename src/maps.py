@@ -21,9 +21,9 @@ GAME_MAPS: dict[MapID , Map] = {
         }),
         Room(id=2, layout={
             Direction.NORTH : Door(False, -1),
-            Direction.EAST : Door(True, 0),
+            Direction.EAST : Door(False, -1),
             Direction.SOUTH : Door(False, -1),
-            Direction.WEST : Door(False, -1)
+            Direction.WEST : Door(True, 0)
         }),
         Room(id=3, layout={
             Direction.NORTH : Door(True, 0),
@@ -33,9 +33,9 @@ GAME_MAPS: dict[MapID , Map] = {
         }),
         Room(id=4, layout={
             Direction.NORTH : Door(False, -1),
-            Direction.EAST : Door(False, -1),
+            Direction.EAST : Door(True, 0),
             Direction.SOUTH : Door(False, -1),
-            Direction.WEST : Door(True, 0)
+            Direction.WEST : Door(False, -1)
         })
     ])
 }
@@ -49,4 +49,4 @@ def debug():
     s = build(map.rooms[0])
     #print(s)
 
-debug()
+#debug()
