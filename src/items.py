@@ -9,8 +9,6 @@ class ItemID(IntEnum):
     SMALL_POTION = auto()
 
 
-
-
 GAME_ITEMS = {
         ItemID.NULL_ITEM: AventureItem(),
         ItemID.RUSTY_SWORD: AventureItem('Rusty Sword', 

@@ -19,6 +19,7 @@ class GlobalStats:
     deaths: int = 0
     totalGold: int = 0
     totalItems: int = 0
+    messagesSent: int = 0
 
 
 # player data in a dataclass to make writing to DB easier
@@ -201,7 +202,7 @@ class Player:
         self.data: Data = Data()
         self.stats: GlobalStats = GlobalStats()
         self.state: State = State.NORUN_MENU
-        self.inv: list[InvItem] = []
+        self.inv: PlayerInventory = PlayerInventory()
         self.equipment: Equipment = Equipment(
             self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV)
     
@@ -234,6 +235,24 @@ class Player:
                 return True
             case _:
                 return False
+    
+    def addExp(self, amt: int):
+        self.data.exp += amt
+        # TODO: add level up mechanics
+    
+    def addGold(self, amt: int):
+        self.data.gold += amt
+        self.stats.totalGold += amt
+
+    # checks if player has enough gold to "spend" for amt
+    # returns true if yes, updates gold
+    # false if no, amount stays the same
+    def spendGold(self, amt: int) -> bool:
+        if (self.data.gold - amt) < 0:
+            return False
+        else:
+            self.data.gold -= amt
+            return True
             
 def debug():
    p = PlayerInventory()
