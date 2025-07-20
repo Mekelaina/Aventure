@@ -234,12 +234,14 @@ class Player:
             self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV)
     
     def takeDamage(self, dmg: int) -> None:
-        if (self.data.currHealth - dmg) <= 0:
+        res = dmg - self.getDeffence()
+        
+        if (self.data.currHealth - res) <= 0:
             self.data.currHealth = 0
             self.data.isAlive = 0
             # todo change state
         else:
-            self.data.currHealth -= dmg
+            self.data.currHealth -= res
     
     def healSelf(self, amt: int) -> None:
         if (self.data.currHealth + amt) >= self.data.maxHealth:

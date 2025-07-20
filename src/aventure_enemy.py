@@ -1,7 +1,7 @@
+import copy
 
-
-class Enemy():
-    def __init__(self, id: int, name: str ='', desc: str='', ascii: str = '&', maxHealth=1,
+class GameEnemy():
+    def __init__(self, id: int=0, name: str ='', desc: str='', ascii: str = '&', maxHealth=1,
                  atk: int = 2, deff: int = 0, xp: int = 0, gold: int = 0):
         self.id: int = id
         self.name: str = name
@@ -22,6 +22,9 @@ class Enemy():
         else:
             self.currHealth = 0
             self.isAlive = False
+
+    def newEnemy(self) -> 'GameEnemy':
+        return copy.copy(self)
     
     def serialize(self) -> bytes:
         res = bytearray()
@@ -41,10 +44,10 @@ class Enemy():
             return True
 
 def debug():
-    e = Enemy(2, maxHealth=10)
+    e = GameEnemy(2, maxHealth=10)
     print(f'e: {e.id}, {e.isAlive}, {e.currHealth}')
     print(e.serialize().hex())
-    g = Enemy(2)
+    g = GameEnemy(2)
     g.deserialize(e.serialize())
     print(f'g: {g.id}, {g.isAlive}, {g.currHealth}')
 debug()
