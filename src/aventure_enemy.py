@@ -43,11 +43,11 @@ class GameEnemy():
             self.currHealth = blob[2]
             return True
 
-def debug():
-    e = GameEnemy(2, maxHealth=10)
-    print(f'e: {e.id}, {e.isAlive}, {e.currHealth}')
-    print(e.serialize().hex())
-    g = GameEnemy(2)
-    g.deserialize(e.serialize())
-    print(f'g: {g.id}, {g.isAlive}, {g.currHealth}')
-debug()
+# def debug():
+#     e = GameEnemy(2, maxHealth=10)
+#     print(f'e: {e.id}, {e.isAlive}, {e.currHealth}')
+#     print(e.serialize().hex())
+#     g = GameEnemy(2)
+#     g.deserialize(e.serialize())
+#     print(f'g: {g.id}, {g.isAlive}, {g.currHealth}')
+# debug()

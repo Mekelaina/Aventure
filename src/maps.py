@@ -1,7 +1,8 @@
 from enum import IntEnum
 from aventure_map import *
-from ascii_bulder import build
+from ascii_bulder import buildRoom
 from enemies import EnemyID
+from items import ItemID
 
 class MapID(IntEnum):
     TEST_MAP_EMPTY = 0
@@ -42,7 +43,7 @@ GAME_MAPS: dict[MapID , Map] = {
     ]),
     MapID.TEST_MAP_FIGHT : Map(MapID.TEST_MAP_FIGHT, rooms=[
         Room(id=0, layout={
-            Direction.NORTH : Door(False, 1),
+            Direction.NORTH : Door(True, 1),
             Direction.EAST : Door(True, 2),
             Direction.SOUTH : Door(False, 3),
             Direction.WEST : Door(True, 4)
@@ -52,7 +53,7 @@ GAME_MAPS: dict[MapID , Map] = {
             Direction.EAST : Door(False, -1),
             Direction.SOUTH : Door(True, 0),
             Direction.WEST : Door(False, -1)
-        }, enemies=[EnemyID.LARGE_RAT]),
+        }, loot=[ItemID.SMALL_POTION], enemies=[EnemyID.LARGE_RAT], switch=(0, Direction.NORTH)),
         Room(id=2, layout={
             Direction.NORTH : Door(False, -1),
             Direction.EAST : Door(False, -1),
@@ -79,8 +80,9 @@ def getMap(mapID: int) -> Map:
     return m.newMap()
 
 def debug():
-    map: Map = getMap(0)
-    s = build(map.rooms[0])
-    #print(s)
+    map: Map = getMap(1)
+    s = buildRoom(map.rooms[1], True, Direction.WEST)
+    #print(map.rooms[0].layout[0])
+    print(s)
 
-#debug()
+debug()

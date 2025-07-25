@@ -27,6 +27,9 @@ class Door():
             self.open = True
             return True
         return False
+    
+    def __str__(self):
+        return f'open: {self.open}, next: {self.next}'
 
 
 class Room():
@@ -50,6 +53,8 @@ class Room():
                 Direction : Door, Direction : Door, Direction : Door] = layout
            #list of loot to find, stored as item IDs
            self.loot: list[int] = loot
+           #whether room has loot
+           self.hasLoot: bool = True if loot else False
            #room text description
            self.desc: str = desc
            #room ascii art depeiction
@@ -67,6 +72,9 @@ class Room():
            #default is a defined NO_SWITCH
            #if tuple
            self.hasSwitch: bool = False if switch == Room.NO_SWITCH else True
+           #is set True after a room switch has been flipped by player
+           #only used if hasSwitch is True
+           self.switchToggled: bool = False
            #room id and direction of the door the switch opens
            self.switch: tuple[int, Direction]
 

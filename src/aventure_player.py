@@ -35,6 +35,7 @@ class Data:
     exp: int = 0
     gold: int = 0
     lastMove: Direction = Direction.NORTH
+    hasMoved: bool = False
     map: int = -1
     room: int = -1
 
