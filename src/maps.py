@@ -53,7 +53,7 @@ GAME_MAPS: dict[MapID , Map] = {
             Direction.EAST : Door(False, -1),
             Direction.SOUTH : Door(True, 0),
             Direction.WEST : Door(False, -1)
-        }, loot=[ItemID.SMALL_POTION], enemies=[EnemyID.LARGE_RAT], switch=(0, Direction.NORTH)),
+        }, loot=[ItemID.SMALL_POTION], enemy=EnemyID.LARGE_RAT, switch=(0, Direction.NORTH)),
         Room(id=2, layout={
             Direction.NORTH : Door(False, -1),
             Direction.EAST : Door(False, -1),

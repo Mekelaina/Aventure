@@ -42,7 +42,7 @@ class Room():
                     loot: list[int] = [],
                     desc: str = '',
                     ascii: str = '',
-                    enemies: list[int] = [],
+                    enemy: int = -1,
                     isExit: bool = False,
                     switch: tuple[int, Direction] = NO_SWITCH
                 ):
@@ -60,12 +60,11 @@ class Room():
            #room ascii art depeiction
            self.ascii: str = ascii
            #list of enemies to fight, stored as enemy IDs
-           self.enemies: list[int] = enemies
+           self.enemy: int = enemy
            # whether room has enemies.
            # used to check for combat and mark rooms as safe
-           # default is decided based on enemies list
-           # empty lists evaluate to fasle as boolean
-           self.hasEnemies: bool = True if enemies else False
+           # default is decided based on enemy
+           self.hasEnemy: bool = True if enemy >= 0 else False
            #is this the exit room of the map
            self.isExit: bool = isExit
            #does this room have a switch
