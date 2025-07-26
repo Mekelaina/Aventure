@@ -9,6 +9,7 @@ SWITCH_TOGGLED = '/'
 TREASURE = '$'
 PLAYER = '@'
 SPACE = ' '
+KEY = '!'
 # COL is characters per row
 COL: int = 13
 #ROW is lines
@@ -127,10 +128,13 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
             case Direction.WEST:
                 buff[ROW_MID][COL-3] = PLAYER
         
-        if room.hasEnemies:
-            e = getEnemy(room.enemies[0]).ascii
+        if room.hasEnemy:
+            e = getEnemy(room.enemy).ascii
             buff[int(ROW/2)-1][int((COL-1)/2)] = e
         
+        if room.hasKey:
+            buff[1][2] = KEY
+
         if room.hasSwitch:
             # a bit confusing at first, basically
             #set this char to untoggle switch if switchToggled is false
