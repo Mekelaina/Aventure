@@ -46,6 +46,7 @@ class Room():
                      desc: str = '',
                      enemy: int = 0,
                      isExit: bool = False,
+                     hasKey: bool = False,
                      switch: Switch = NO_SWITCH
                  ):
             #room id
@@ -73,6 +74,9 @@ class Room():
             #is set True after a room switch has been flipped by player
             #only used if hasSwitch is True
             self.switchToggled: bool = False
+
+            #does this room have the dungeon key needed to escape
+            self.hasKey = hasKey
             #room id and direction of the door the switch opens
             self.switch: Switch = switch
 
@@ -84,7 +88,8 @@ class Room():
             buff += self.switchToggled.to_bytes()
             buff += self.hasLoot.to_bytes()
             buff += self.hasEnemy.to_bytes()
-            buff += self.enemy.to_bytes() #7
+            buff += self.hasKey.to_bytes()
+            buff += self.enemy.to_bytes() #8
             
             for door in self.layout.values(): #4
                 door: Door
@@ -119,24 +124,23 @@ class Room():
             self.switchToggled = bool (data[3])
             self.hasLoot = bool(data[4])
             self.hasEnemy = bool(data[5])
-            self.enemy = data[6]
+            self.hasKey = bool(data[6])
+            self.enemy = data[7]
 
-
-            self.layout = {Direction.NORTH : Door(bool(data[7]), Room.__signed(data[8])),
-                           Direction.EAST : Door(bool(data[9]), Room.__signed(data[10])),
-                           Direction.SOUTH : Door(bool(data[11]), Room.__signed(data[12])),
-                           Direction.WEST : Door(bool(data[13]), Room.__signed(data[14]))}
+            self.layout = {Direction.NORTH : Door(bool(data[8]), Room.__signed(data[9])),
+                           Direction.EAST : Door(bool(data[10]), Room.__signed(data[11])),
+                           Direction.SOUTH : Door(bool(data[12]), Room.__signed(data[13])),
+                           Direction.WEST : Door(bool(data[14]), Room.__signed(data[15]))}
             
-            self.switch = (Room.__signed(data[15]), data[16])
+            self.switch = (Room.__signed(data[16]), data[17])
 
-            items = data[17]
+            items = data[18]
             item_ids: list[int] = []
             if items > 0:
                 for i in range(items):
-                    item_ids.append(ItemID(data[18 + i]))
+                    item_ids.append(ItemID(data[19 + i]))
             self.loot = item_ids
-            newi = 18 + items
-            buff = ''
+            newi = 19 + items
             desc_len = int.from_bytes(data[newi:newi+1])
             self.desc = data[newi+2:].decode()
             
@@ -239,40 +243,7 @@ class Map():
             
     
 def debug():
-    m = Map(0, rooms=[
-        Room(id=0, layout={
-            Direction.NORTH : Door(False, 1),
-            Direction.EAST : Door(True, 2),
-            Direction.SOUTH : Door(False, 3),
-            Direction.WEST : Door(True, 4)
-            }),
-        Room(id=1, layout={
-            Direction.NORTH : Door(False, -1),
-            Direction.EAST : Door(False, -1),
-            Direction.SOUTH : Door(True, 0),
-            Direction.WEST : Door(False, -1)
-        }),
-        Room(id=2, layout={
-            Direction.NORTH : Door(False, -1),
-            Direction.EAST : Door(True, 0),
-            Direction.SOUTH : Door(False, -1),
-            Direction.WEST : Door(False, -1)
-        }),
-        Room(id=3, layout={
-            Direction.NORTH : Door(True, 0),
-            Direction.EAST : Door(False, -1),
-            Direction.SOUTH : Door(False, -1),
-            Direction.WEST : Door(False, -1)
-        }),
-        Room(id=4, layout={
-            Direction.NORTH : Door(False, -1),
-            Direction.EAST : Door(False, -1),
-            Direction.SOUTH : Door(False, -1),
-            Direction.WEST : Door(True, 0)
-        })
-    ])
-
-    print(m.rooms[0])
+    pass
     
 #debug()
         

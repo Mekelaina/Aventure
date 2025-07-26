@@ -26,59 +26,31 @@ def move(player: Player, d: Door):
             player.data.room = d.next
     return False
 
+class Game:
+    def __init__(self):
+        self.player: Player = Player()
+        self.map: Map = Map(-1, [])
+        self.enemy: GameEnemy = GameEnemy()
+    
+    def loadGame(self):
+        pass
+
+    def saveGame(self):
+        pass
+
+    def newGame(self, mapID: MapID):
+        self.player.restart(mapID)
+        
+
+
+
 def debug():
     player: Player = Player()
-    player.data.map = 0
-    player.data.room = 0
-    player.state = GameState.RUN_DUNGEON
-    enemy: GameEnemy = getEnemy(EnemyID.LARGE_RAT)
+    enemy: GameEnemy = getEnemy(EnemyID.NO_ENEMY)
     gmap: Map = getMap(0)
-    loop: bool = True
-
-    res = buildRoom(gmap.rooms[0])
-
-    print(res)
     
     
-    # # print(f'A {enemy.name} attacks!')
-    # # print('------ fight! ------')
-    # # print(f'Enemy HP: {enemy.currHealth}/{enemy.maxHealth}')
-    # # print(f'Your HP: {player.data.currHealth}/{player.data.maxHealth}')
-    # while loop:
-        
-    #     text = input('>')
-    #     tokens = text.split()
-    #     l: dict[Direction, Door] = gmap.rooms[player.data.room].layout
-    #     match player.state:
-    #         case GameState.RUN_DUNGEON:
-    #             print(f'Room {player.data.room}')
-    #             match text:
-    #                 case 'q':
-    #                     loop = False
-    #                 case 'n':
-    #                     move(player, l[Direction.NORTH])
-    #                 case 's':
-    #                     move(player, l[Direction.SOUTH])
-    #                 case 'e':
-    #                     move(player, l[Direction.EAST])
-    #                 case 'w':
-    #                     move(player, l[Direction.WEST])
-    #                 case _:
-    #                     print(f'Unrecognized input: {text}')
-    #         case GameState.RUN_COMBAT:
-                
-    #             match text:
-    #                 case 'a':
-    #                     enemy.takeDamage(player.getAttack())
-    #                     player.takeDamage(enemy.atk)
-                        
-    #                 case 'd':
-    #                     print('no def implemented')
-    #                 case _:
-    #                     print(f'Unrecognized input: {text}')
-    #             print(f'Alive: {enemy.isAlive}')
-    #             print(f'Enemy HP: {enemy.currHealth}/{enemy.maxHealth}')
-    #             print(f'Your HP: {player.data.currHealth}/{player.data.maxHealth}')
+
 
 
 

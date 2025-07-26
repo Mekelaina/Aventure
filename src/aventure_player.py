@@ -58,6 +58,7 @@ class EquipSlot(IntEnum):
 
 @dataclass
 class Equipment():
+    key: bool
     weapon: InvItem
     armor: InvItem
     offhand: InvItem
@@ -102,8 +103,9 @@ class Equipment():
                 return True
     
     #return form for writing to DB
-    def serialize(self) -> tuple[int, int, int, int, int, int, int]:
-        return (self.weapon.itemID, 
+    def serialize(self) -> tuple[int, int, int, int, int, int, int, int]:
+        return (int(self.key),
+                self.weapon.itemID, 
                 self.armor.itemID, 
                 self.offhand.itemID,
                 self.consumeable1.itemID,
@@ -112,8 +114,9 @@ class Equipment():
                 self.consumeable2.count)
     
     #parse data from db back into object
-    def deserialize(self, data: tuple[int, int, int, int, int, int, int]):
+    def deserialize(self, data: tuple[int, int, int, int, int, int, int, int]):
         #this is messy, but its just tuple unpacking
+        self.key,
         self.weapon.itemID, 
         self.armor.itemID, 
         self.offhand.itemID, 
@@ -121,6 +124,8 @@ class Equipment():
         self.consumeable1.count,
         self.consumeable2.itemID,
         self.consumeable2.count = data
+        #type casting to insure key is bool
+        self.key = bool(self.key)
         #the counts arent used for weapon, armor, offhand
         self.weapon.count = 0
         self.armor.count = 0
@@ -230,7 +235,11 @@ class Player:
         self.data: Data = Data()
         self.stats: GlobalStats = GlobalStats()
         self.state: GameState = GameState.NORUN_MENU
-        self.inv: PlayerInventory = PlayerInventory()
+        #two inventories. one to hold items aquired on current run
+        #to lose in case of death
+        #colated upon death or victory
+        self.runInv: PlayerInventory = PlayerInventory()
+        self.postInv: PlayerInventory = PlayerInventory()
         self.equipment: Equipment = Equipment(
             self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV)
     
@@ -297,6 +306,24 @@ class Player:
             return self.data.baseDefence + getMod(self.equipment.armor.itemID)
         else:
             return self.data.baseDefence
+        
+    def hasKey(self) -> bool:
+        return self.equipment.key
+    
+    def giveKey(self):
+        self.equipment.key = True
+    
+    def takeKey(self):
+        self.equipment.key = False
+    
+    def restart(self, map: int):
+        self.state = GameState.RUN_DUNGEON
+        self.data.map = map
+        self.data.room = 0
+        self.data.hasMoved = False
+        self.data.isAlive = True
+        self.data.currHealth = self.data.maxHealth
+        self.takeKey()
             
 def debug():
    p = PlayerInventory()
@@ -311,6 +338,9 @@ def debug():
 
    q.deserialize(b)
    print(q)
+
+  
+
 
 
 
