@@ -14,7 +14,7 @@ import aventure_db as db
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix=config.COMMAND_PREFIX, intents=intents)
+bot = commands.Bot(command_prefix=config.COMMAND_PREFIX, intents=intents, help_command=None)
 
 client = discord.Client(intents=intents)
 
@@ -49,18 +49,17 @@ async def swallow_user_input(ctx: commands.Context ) -> bool:
 
 @bot.event
 async def on_ready():
-    #await bot.tree.sync()
+    await bot.tree.sync()
+    #await print(f'We have logged in as {bot.user}')
     await db.initializeDB()
-    print(f'We have logged in as {bot.user}')
 
 # ping command. really used for debugging. will be removed later
 @bot.command()
 async def ping(ctx: commands.Context):
     await ctx.send("pong")
-    swallow_user_input(ctx)
 
-
-@bot.command
+#========= server side commands ==========#
+@bot.command(name='dm')
 async def dm(ctx: commands.Context):
     user = ctx.author
 
@@ -75,17 +74,19 @@ async def dm(ctx: commands.Context):
         await user.send(f'Hello! Type \'{config.COMMAND_PREFIX}help\' for DM commands')
         await swallow_user_input(ctx)
 
-@bot.command
+@bot.command()
 async def help(ctx: commands.Context):
-    await ctx.send("TODO: Implement help")    
+    await ctx.send("TODO: Implement help")
 
-@bot.command
+@bot.command()
 async def stats(ctx: commands.Context):
     await ctx.send("TODO: Implement stats") 
 
-@bot.command
+@bot.command()
 async def delete(ctx: commands.Context):
     await ctx.send("TODO: Implement delete") 
+
+#========== dm commands ============#
 
 
 # run the bot

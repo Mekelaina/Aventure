@@ -30,7 +30,7 @@ def initializeDB() -> bool:
     print('Initializing DB')
     
     if doesDBExist():
-        print("A")
+        #print("A")
         result, missing = verifyTablesPresent()
         if result == False:
             try:
@@ -125,23 +125,23 @@ def checkEntry(cursor: sqlite3.Cursor, table: str, id: int) -> bool:
 
 
 def debug():
-   
-    initializeDB()
-    try:
-        with sqlite3.connect(getDatabasePath()) as conn:
-            cursor = conn.cursor()
-            writeToDB(conn, cursor, Inserts.USERS, (123,))
-            writeToDB(conn, cursor, Inserts.USERS, (456,))
-            writeToDB(conn, cursor, Inserts.USERS, (789,))
-            print("ee")
-            if checkEntry(cursor, Tables.USERS.name, 123):
-                print("aba")
-            else:
-                print('boo')
+   pass
+    # initializeDB()
+    # try:
+    #     with sqlite3.connect(getDatabasePath()) as conn:
+    #         cursor = conn.cursor()
+    #         writeToDB(conn, cursor, Inserts.USERS, (123,))
+    #         writeToDB(conn, cursor, Inserts.USERS, (456,))
+    #         writeToDB(conn, cursor, Inserts.USERS, (789,))
+    #         print("ee")
+    #         if checkEntry(cursor, Tables.USERS.name, 123):
+    #             print("aba")
+    #         else:
+    #             print('boo')
             
-    except sqlite3.Error as error:
-        print('Error occurred -', error)
+    # except sqlite3.Error as error:
+    #     print('Error occurred -', error)
 
     
 
-debug()
+#debug()
