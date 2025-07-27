@@ -7,7 +7,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
-import asyncio
 
 import aventure_config as config
 import aventure_db as db
