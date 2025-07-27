@@ -1,5 +1,11 @@
 import copy
 
+async def length(blob: bytes) -> int:
+    count = 0
+    for b in blob:
+        count+=1
+    return count
+
 class GameEnemy():
     def __init__(self, id: int=0, name: str ='', desc: str='', ascii: str = '&', maxHealth=1,
                  atk: int = 2, deff: int = 0, xp: int = 0, gold: int = 0):
@@ -26,22 +32,26 @@ class GameEnemy():
     def newEnemy(self) -> 'GameEnemy':
         return copy.copy(self)
     
-    def serialize(self) -> bytes:
+    async def serialize(self) -> bytes:
         res = bytearray()
         res.extend(self.id.to_bytes())
         res.extend(self.isAlive.to_bytes())
         res.extend(self.currHealth.to_bytes())
-        print(res)
+        #print(res)
         return bytes(res)
     
-    def deserialize(self, blob: bytes) -> bool:
-        if len(blob) != 3:
-            return False
-        else:
+
+
+    async def deserialize(self, blob: bytes):
+        
+        x = await length(blob)
+        
+        if  x == 3:
+            
             self.id = blob[0]
             self.isAlive = bool(blob[1])
             self.currHealth = blob[2]
-            return True
+        
 
 # def debug():
 #     e = GameEnemy(2, maxHealth=10)

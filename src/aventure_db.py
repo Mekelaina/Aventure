@@ -1,12 +1,13 @@
 import aiosqlite 
 import typing
+import asyncio
 from aiopath import Path
 
 from db_queries import *
 from aventure_config import DATABASE
-from aventure_player import Player, playerData, statsData, equipmentData
-import aventure_map as map
-import aventure_enemy as enemy
+from aventure_player import Player, playerData, statsData, equipmentData, GameState
+from aventure_map import Map
+from aventure_enemy import GameEnemy
 
 # Gets the filepath to the database location
 # in an OS independent way
@@ -37,8 +38,9 @@ async def initializeDB() -> bool:
     
     if await _doesDBExist():
         
+        
         result, missing = await _verifyTablesPresent()
-        print('ee')
+        
         if result == False:
             try:
                 async with aiosqlite.connect(await getDatabasePath()) as conn:
@@ -54,7 +56,9 @@ async def initializeDB() -> bool:
             async with aiosqlite.connect(await getDatabasePath()) as conn:
                 
                 cursor = await conn.cursor()
-                await _createTables(cursor, Tables.getValues())
+                print('x')
+                await _createTables(cursor, await Tables.getValues())
+                print('y')
         except aiosqlite.Error as error:
                 print('Error occurred -', error)
                 return False
@@ -62,9 +66,6 @@ async def initializeDB() -> bool:
     print('DB Initalization Complete')
     return True
 
-async def pls(s: list[str]):
-    for x in s:
-        yield x
 
 # checks if the DB contains all Tables in the Tables enum
 # true if yes, false if no
@@ -76,18 +77,20 @@ async def _verifyTablesPresent() -> tuple[bool, list[str]]:
         
         cursor: aiosqlite.Cursor = await conn.cursor()
        
+        #loops that call async code dont work.
+        
         tables = await Tables.getNames()
-        #remove loop
-        async for table in pls(tables):
+        for table in tables:
             # this query only returns int 1 if table is present, int 0 otherwise
             await cursor.execute(Checks.TABLE_EXISTS, (table,))
-            print('e')
+            
             x = await cursor.fetchone()
-            print('f')
+            
             x = x[0]
             if x == 0:
                 res = False
                 await missing.append(table)
+        
     return (res, missing)
 
 
@@ -115,7 +118,10 @@ async def _writeToDB(conn: aiosqlite.Connection, cursor: aiosqlite.Connection, s
 #only used to create tables
 async def _createTables(cursor: aiosqlite.Cursor, tables: list[str]) -> None:
     for i in tables:
-            await cursor.execute(i)
+        await cursor.execute(i)
+
+async def _createTable(cursor: aiosqlite.Cursor, table: str) -> None:
+    await cursor.execute(table)
 
 #retruns true if entry with given id exists in given table
 #false otherwise
@@ -135,7 +141,8 @@ async def _checkEntry(cursor: aiosqlite.Cursor, table: str, id: int) -> bool:
         case Tables.PLAYER_STATS.name:
             await cursor.execute(Checks.ENTRY_PLAYER_STATS_EXISTS, (id,))
     
-    res = await cursor.fetchone()[0]
+    res = await cursor.fetchone()
+    res = res[0]
     if res == 1:
         return True
     else:
@@ -148,9 +155,120 @@ async def findUser(cursor: aiosqlite.Cursor, discord_id: int) -> None:
     else:
         return False
 
+async def loadUser(conn: aiosqlite.Connection, cursor: aiosqlite.Cursor, discord_id: int, 
+                  p: Player, m: Map, e: GameEnemy) -> int:
+    #print("1")
+    user = await _readFromDB(cursor, Gets.USERS_ROW, (discord_id,))
+    user_id = user[0]
+    combat = await _readFromDB(cursor, Gets.PLAYER_COMBAT_ROW, (user_id,))
+    dungeon = await _readFromDB(cursor, Gets.PLAYER_DUNGEON_ROW, (user_id,))
+    info = await _readFromDB(cursor, Gets.PLAYER_INFO_ROW, (user_id,))
+    stats = await _readFromDB(cursor, Gets.PLAYER_STATS_ROW, (user_id,))
+    eq = await _readFromDB(cursor, Gets.PLAYER_EQUIPMENT_ROW, (user_id,))
+    #print('2')
+    #parse and assemble player data from tables
+    temp = list(info)
+    state = temp[2]
+    pData = tuple(temp[3:])
+    
+    temp = list(stats)
+    pStats = tuple(temp[2:])
+    temp = list(eq)
+    
+    pi = temp.pop()
+    ri = temp.pop()
+    pEq = tuple(temp[2:])
+    task1 = asyncio.create_task(p.load([state, pData, pStats, pEq, ri, pi]))
+    #print("3")
+    temp = list(combat)
+    temp = temp[2:]
+    #print(temp)
+    inCombat = temp[0]
+    eData = temp[1]
+    #print("4")
+    task2 = asyncio.create_task(e.deserialize(eData))
+    #print("0")
+    temp = list(dungeon)
+    dungeon = dungeon[2:]
+    #future = asyncio.ensure_future(m.deserialize(tuple(dungeon)))
+    task3 = asyncio.create_task(m.deserialize(tuple(dungeon)))
+    await task1
+    #print("1")
+    await task2
+    #print('2')
+    await task3
+    #print("5")
+    return user_id
+
+    
+async def saveUser(conn: aiosqlite.Connection, cursor: aiosqlite.Cursor, discord_id: int, 
+                  p: Player, m: Map, e: GameEnemy):
+    user = await _readFromDB(cursor, Gets.USERS_ROW, (discord_id,))
+    user_id = user[0]
+    
+    pData = await p.save()
+    mData = await m.serialize()
+    eData = await e.serialize()
+
+    await _writeToDB(conn, cursor, Updates.PLAYER_DUNGEON, (mData[0], mData[1], user_id))
+
+    in_combat = True if p.state == GameState.RUN_COMBAT else False
+    await _writeToDB(conn, cursor, Updates.PLAYER_COMBAT, (in_combat, eData, user_id))
+    
+    state = pData.pop(0)
+    temp: tuple = pData.pop(0)
+    temp = (state,) + temp + (user_id,)
+    await _writeToDB(conn, cursor, Updates.PLAYER_INFO, temp)
+    
+    temp: tuple  = pData.pop(0)
+    temp = temp + (user_id,) 
+    await _writeToDB(conn, cursor, Updates.PLAYER_STATS, temp)
+    
+    temp: tuple = pData.pop(0)
+    ri = pData.pop(0)
+    pi = pData.pop(0)
+    temp = temp + (ri, pi) + (user_id,)
+    await _writeToDB(conn, cursor, Updates.PLAYER_EQUIPMENT, temp)
+    
+async def deleteUser(conn: aiosqlite.Connection, cursor: aiosqlite.Cursor, discord_id: int, user_id: int):
+    await _writeToDB(conn, cursor, Deletes.USERS, (discord_id,))
+    await _writeToDB(conn, cursor, Deletes.PLAYER_COMBAT, (user_id,))
+    await _writeToDB(conn, cursor, Deletes.PLAYER_DUNGEON, (user_id,))
+    await _writeToDB(conn, cursor, Deletes.PLAYER_EQUIPMENT, (user_id,))
+    await _writeToDB(conn, cursor, Deletes.PLAYER_INFO, (user_id,))
+    await _writeToDB(conn, cursor, Deletes.PLAYER_STATS, (user_id,))
+    
+    
+
 async def newUser(conn: aiosqlite.Connection, cursor: aiosqlite.Cursor, discord_id: int, 
-                  p: Player, m: map.Map, e: enemy.GameEnemy):
+                  p: Player, m: Map, e: GameEnemy):
+    #print('Ah')
     await _writeToDB(conn, cursor, Inserts.USERS, (discord_id,))
-    #pData = p.save()
-    #print(pData)
+    user = await _readFromDB(cursor, Gets.USERS_ROW, (discord_id,))
+    user_id = user[0]
+    pData = await p.save()
+    mData = await m.serialize()
+    eData = await e.serialize()
+
+    
+    await _writeToDB(conn, cursor, Inserts.PLAYER_COMBAT, (user_id, 0, eData))
+    await _writeToDB(conn, cursor, Inserts.PLAYER_DUNGEON, (user_id, mData[0], mData[1]))
+    
+    state = pData.pop(0)
+    temp: tuple = pData.pop(0)
+    temp = (user_id,) + (state,) + temp
+    print(temp)
+    await _writeToDB(conn, cursor, Inserts.PLAYER_INFO, temp)
+    
+    temp: tuple = pData.pop(0)
+    temp = (user_id,) + temp
+    await _writeToDB(conn, cursor, Inserts.PLAYER_STATS, temp)
+
+    temp: tuple = pData.pop(0)
+    ri = pData.pop(0)
+    pi = pData.pop(0)
+    temp = (user_id,) + temp + (ri, pi)
+    await _writeToDB(conn, cursor, Inserts.PLAYER_EQUIPMENT, temp)
+    
+
     

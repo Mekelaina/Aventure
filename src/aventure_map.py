@@ -2,6 +2,7 @@ from enum import IntEnum
 from dataclasses import field
 import copy
 from items import ItemID
+import asyncio
 
 
 
@@ -80,7 +81,7 @@ class Room():
             #room id and direction of the door the switch opens
             self.switch: Switch = switch
 
-        def serialize(self) :
+        async def serialize(self) :
             buff = bytearray()
             buff += self.id.to_bytes()
             buff += self.isExit.to_bytes()
@@ -167,16 +168,22 @@ class Room():
             
             
             
-def _chop( data: bytearray) -> tuple[bytearray, bytearray]:
-        count = 0
-        for i in range(len(data)):
-            if data[i] == 254:
-                count += 1
-            else:
-                count = 0
-            
-            if count == 2:
-                return (data[0:i-1], data[i+1:])
+async def _chop( data: bytearray) -> list[bytearray]:
+    # buff = bytearray()
+    # for idx, b in enumerate(data):
+    count = 0
+    #print(count)
+    #print(data)
+    for i in range(len(data)):
+        #print('dfsa')
+        await asyncio.sleep(0)
+        if data[i] == 254:
+            count += 1
+        else:
+            count = 0
+        
+        if count == 2:
+            return (data[0:i-1], data[i+1:])
 
 
            
@@ -199,28 +206,42 @@ class Map():
         useful for editable copies of static constants'''     
         return copy.deepcopy(self)
     
-    def serialize(self) -> bytes:
+    async def serialize(self) -> tuple[int, bytes]:
         buff = bytearray()
+        
         for room in self.rooms:
-            buff += room.serialize()
+            buff += await room.serialize()
             buff.append(254)
             buff.append(254)
-        return bytes(buff)
+        return (self.id, bytes(buff))
 
     
     
           
-    def deserialize(self, data: bytes) -> bool:
+    async def deserialize(self, data: tuple[int, bytes]) -> bool:
         buff = []
-        mut_data = bytearray(data)
+        
+        #mut_data = list(data)
+        
         loop = True
+        
+        self.id = data[0]
+        mut_data = bytearray(data[1])
+        #print("m")
         while loop:
-            x, y = _chop(mut_data)
+            #print('1')
+            x, y = await _chop(mut_data)
+            #print('2')
+            await asyncio.sleep(0)
+            #print('3')
             buff.append(x)
             mut_data = y
             if not mut_data:
                 loop = False
+
         
+            
+        #print("w")
         r: list[Room] = []
         for b in buff:
             room = Room()

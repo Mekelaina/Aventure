@@ -14,7 +14,11 @@ class ExtEnum(StrEnum):
     # gets all enum values as a list
     @classmethod
     async def getValues(cls) -> list[str]:
-        return list(pool.Pool.map_async(lambda c: c.value, cls))
+        rtn = []
+
+        for i in cls:
+            rtn.append(i.value)
+        return rtn
     
     # gets all enum names as a list
     @classmethod
@@ -22,12 +26,16 @@ class ExtEnum(StrEnum):
         rtn = []
         
         for i in cls:
-            rtn.append(i)
+            rtn.append(i.name)
         return  rtn #list(pool.Pool.map_async(lambda c: c.name, cls))
     
     @classmethod
     async def getValuesFromList(cls, names: list[str]) -> list[str]:
-        return [cls[name].name for name in names]
+        buff = []
+        for i in cls:
+            if i.name in names:
+                buff.append(i.value)
+        return buff
     
 
 class Tables(ExtEnum):
@@ -77,6 +85,7 @@ class Tables(ExtEnum):
     PLAYER_INFO = '''CREATE TABLE "PLAYER_INFO" (
         "INFO_ID"	INTEGER NOT NULL UNIQUE,
         "USER"	INTEGER NOT NULL UNIQUE COLLATE BINARY,
+        "GAME_STATE"	INTEGER NOT NULL DEFAULT 0 CHECK("GAME_STATE" >= 0 AND "GAME_STATE" < 5),
         "LEVEL"	INTEGER NOT NULL DEFAULT 1,
         "HEALTH_MAX"	INTEGER NOT NULL DEFAULT 0,
         "HEALTH_CURRENT"	INTEGER NOT NULL DEFAULT 0,
@@ -89,7 +98,6 @@ class Tables(ExtEnum):
         "ROOM"	INTEGER NOT NULL DEFAULT -1,
         "LAST_MOVE"	INTEGER NOT NULL DEFAULT 0 CHECK("LAST_MOVE" >= 0 AND "LAST_MOVE" < 4),
         "HAS_MOVED" INTEGER NOT NULL DEFAULT 0 CHECK("HAS_MOVED" == 0 OR "HAS_MOVED" == 1),
-        "GAME_STATE"	INTEGER NOT NULL DEFAULT 0 CHECK("GAME_STATE" >= 0 AND "GAME_STATE" < 5),
         PRIMARY KEY("INFO_ID" AUTOINCREMENT),
         FOREIGN KEY("USER") REFERENCES "USERS"("USER_ID") ON DELETE CASCADE
     ) STRICT;'''
@@ -147,13 +155,14 @@ class Inserts(ExtEnum):
         CON1_ITEM, CON1_COUNT, CON2_ITEM, CON2_COUNT,
         RUN_INVENTORY, POST_INVENTORY)
         VALUES (NULL, ?, ?, ?, ?, ?, 
-        ?, ?, ?, 
+        ?, ?, ?, ?, 
         ?, ?);'''
     
-    PLAYER_INFO = '''INSERT INTO "PLAYER_EQUIPMENT" (
-        INFO_ID, USER, LEVEL, HEALTH_MAX, HEALTH_CURRENT,
-        ATTACK, DEFENSE, EXP, GOLD, ALIVE, MAP, ROOM
-        LAST_MOVE, HAS_MOVED, GAME_STATE) VALUES (
+    PLAYER_INFO = '''INSERT INTO "PLAYER_INFO" (
+        INFO_ID, USER, GAME_STATE, LEVEL, HEALTH_MAX, 
+        HEALTH_CURRENT, ATTACK, DEFENSE, EXP, 
+        GOLD, ALIVE, MAP, ROOM,
+        LAST_MOVE, HAS_MOVED) VALUES (
         NULL, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?);'''
@@ -161,19 +170,15 @@ class Inserts(ExtEnum):
     PLAYER_STATS = '''INSERT INTO "PLAYER_STATS" (
         STATS_ID, USER, DUNGEONS_CLEARED,
         ENEMIES_KILLED, DEATHS, TOTAL_GOLD,
-        TOTAL_ITEMS, MESSAGES SENT) VALUES (
+        TOTAL_ITEMS, MESSAGES_SENT) VALUES (
         NULL, ?, ?,
         ?, ?, ?,
         ?, ?);'''
     
 class Updates(ExtEnum):
     PLAYER_COMBAT = '''UPDATE "PLAYER_COMBAT"
-        SET DUNGEONS_CLEARED = ?,
-            ENEMIES_KILLED = ?,
-            DEATHS = ?,
-            TOTAL_GOLD = ?,
-            TOTAL_ITEMS = ?,
-            MESSAGES_SENT = ?
+        SET IN_COMBAT = ?,
+            ENEMY = ?
         WHERE USER == ?;'''
     
     PLAYER_DUNGEON = '''UPDATE "PLAYER_DUNGEON"
@@ -195,19 +200,19 @@ class Updates(ExtEnum):
         WHERE USER == ?;'''
     
     PLAYER_INFO = '''UPDATE "PLAYER_INFO"
-        SET LEVEL = ?,
+        SET GAME_STATE = ?,
+            LEVEL = ?,
             HEALTH_MAX = ?,
             HEALTH_CURRENT = ?,
             ATTACK = ?,
-            DEFENCE = ?,
+            DEFENSE = ?,
             EXP = ?,
             GOLD = ?,
             ALIVE = ?,
             MAP = ?,
             ROOM = ?,
             LAST_MOVE = ?,
-            HAS_MOVED = ?,
-            GAME_STATE = ?
+            HAS_MOVED = ?
         WHERE USER == ?;'''
     
     PLAYER_STATS = '''UPDATE "PLAYER_STATS"
@@ -218,3 +223,17 @@ class Updates(ExtEnum):
             TOTAL_ITEMS = ?,
             MESSAGES_SENT = ?
         WHERE USER == ?;'''
+
+class Deletes(ExtEnum):
+
+    USERS = '''DELETE FROM USERS WHERE DISCORD_ID == ?;'''
+
+    PLAYER_COMBAT = '''DELETE FROM PLAYER_COMBAT WHERE USER == ?;'''
+
+    PLAYER_DUNGEON = '''DELETE FROM PLAYER_DUNGEON WHERE USER == ?;'''
+
+    PLAYER_EQUIPMENT = '''DELETE FROM PLAYER_EQUIPMENT WHERE USER == ?;'''
+
+    PLAYER_INFO = '''DELETE FROM PLAYER_INFO WHERE USER == ?;'''
+
+    PLAYER_STATS = '''DELETE FROM PLAYER_STATS WHERE USER == ?;'''

@@ -31,17 +31,15 @@ def move(player: Player, d: Door):
 class Game:
     def __init__(self):
         self.player: Player = Player()
-        self.map: Map = Map(-1, [])
+        self.map: Map = getMap(0)
         self.enemy: GameEnemy = GameEnemy()
-    
-    def loadGame(self, discord_id: int):
-        pass
-
-    def saveGame(self):
-        pass
 
     def newGame(self, mapID: MapID):
         self.player.restart(mapID)
+    
+    async def messageIncrement(self):
+        self.player.stats.messagesSent += 1
+        
         
 
 

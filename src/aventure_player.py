@@ -25,7 +25,7 @@ class GlobalStats:
     totalItems: int = 0
     messagesSent: int = 0
 
-    def serialize(self) -> statsData:
+    async def serialize(self) -> statsData:
         return (self.dungeonsCleared, 
                 self.enemiesKilled, 
                 self.deaths, 
@@ -33,13 +33,13 @@ class GlobalStats:
                 self.totalItems, 
                 self.messagesSent)
     
-    def deserialize(self, data: statsData) -> None:
-        self.dungeonsCleared, 
+    async def deserialize(self, data: statsData) -> None:
+        (self.dungeonsCleared, 
         self.enemiesKilled, 
         self.deaths, 
         self.totalGold, 
         self.totalItems, 
-        self.messagesSent = data
+        self.messagesSent) = data
 
 
 # player data in a dataclass to make writing to DB easier
@@ -52,14 +52,14 @@ class Data:
     baseDefence: int = 1
     exp: int = 0
     gold: int = 0
-    isAlive: bool = 1
+    isAlive: bool = True
     map: int = -1
     room: int = -1
     lastMove: Direction = Direction.NORTH
     hasMoved: bool = False
 
 #order of values is the order their stored in db
-    def serialize(self) -> playerData:
+    async def serialize(self) -> playerData:
         return (self.level, 
                 self.maxHealth, 
                 self.currHealth,
@@ -70,10 +70,10 @@ class Data:
                 int(self.isAlive),
                 self.map,
                 self.room,
-                int(self.lastMove),
+                self.lastMove.value,
                 int(self.hasMoved))
     
-    def deserialize(self, data: playerData):
+    async def deserialize(self, data: playerData):
         self.level, 
         self.maxHealth, 
         self.currHealth,
@@ -156,7 +156,7 @@ class Equipment():
                 return True
     
     #return form for writing to DB
-    def serialize(self) -> equipmentData:
+    async def serialize(self) -> equipmentData:
         return (int(self.key),
                 self.weapon.itemID, 
                 self.armor.itemID, 
@@ -167,7 +167,7 @@ class Equipment():
                 self.consumeable2.count)
     
     #parse data from db back into object
-    def deserialize(self, data: equipmentData):
+    async def deserialize(self, data: equipmentData):
         #this is messy, but its just tuple unpacking
         self.key,
         self.weapon.itemID, 
@@ -197,7 +197,7 @@ class PlayerInventory:
         return f'Inv:  {{{self.currSize}, {self.items}}}'
     
     #return form of data for writing to db
-    def serialize(self) -> bytes:
+    async def serialize(self) -> bytes:
         res = bytearray()
         res.extend(self.currSize.to_bytes(length=2))
         for i in range(self.currSize):
@@ -206,7 +206,7 @@ class PlayerInventory:
         return bytes(res)
     
     #read data from db and parse it into object variables
-    def deserialize(self, blob: bytes) -> bool:
+    async def deserialize(self, blob: bytes) -> bool:
         if len(blob) < 2:
             return False
         
@@ -379,19 +379,54 @@ class Player:
         self.takeKey()
     
     
-    def save(self) -> list[int, playerData, equipmentData, 
+    async def save(self) -> list[int, playerData, equipmentData, 
                           statsData, bytes, bytes]:
+        # print('0')
+        # player_data = []
+        # print('1')
+        # a = await self.data.serialize()
         
-        player_data: list[int, playerData, equipmentData, 
-                          statsData, bytes, bytes] = []
-        player_data.append(self.state.value)
-        player_data.append(self.data.serialize())
-        player_data.append(self.equipment.serialize())
-        player_data.append(self.stats.serialize())
-        player_data.append(self.runInv.serialize())
-        player_data.append(self.postInv.serialize())
+        # print('2')
+        # b = await self.stats.serialize()
+        
+        # print('3')
+        # c = await self.equipment.serialize()
+        
+        # print('4')
+        # d = await self.runInv.serialize()
+        
+        # print('5')
+        # e = await self.postInv.serialize()
+        
+        # print('6')
+        # rtn = [self.state.value, a, b, c, d, e]
+        # print(rtn)
+        # return rtn
+    
+        
+        player_data = []
+        player_data.append(self.state)
+        
+        player_data.append(await self.data.serialize())
+        
+        player_data.append(await self.stats.serialize())
+        
+        player_data.append(await self.equipment.serialize())
+       
+        player_data.append(await self.runInv.serialize())
+       
+        player_data.append(await self.postInv.serialize())
+        
         return player_data
     
+    async def load(self, data: list[int, playerData, statsData, 
+                          equipmentData, bytes, bytes]):
+        self.state = data.pop(0)
+        await self.data.deserialize(data.pop(0))
+        await self.stats.deserialize(data.pop(0))
+        await self.equipment.deserialize(data.pop(0))
+        await self.runInv.deserialize(data.pop(0))
+        await self.postInv.deserialize(data.pop(0))
 
 
         
