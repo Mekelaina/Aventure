@@ -7,9 +7,13 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
+import asyncio
 
 import aventure_config as config
 import aventure_db as db
+from game_driver import *
+import sqlite3
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -21,7 +25,7 @@ client = discord.Client(intents=intents)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
 
-
+gameDriver: Game = Game()
 
 # === util functions === #
 
@@ -37,13 +41,19 @@ async def is_in_guild(ctx: commands.Context) -> bool:
     else:
         return True
     
-async def swallow_user_input(ctx: commands.Context ) -> bool:
-    if await is_in_guild(ctx):
-        await ctx.message.delete(delay=0.5)
-    else:
-        # TODO figure out permissions to delete commands in dms. 
-        pass
+async def load(discord_id: int):
+    async with sqlite3.connect(await db.getDatabasePath()) as conn:
+        cursor = conn.cursor()
+        print(discord_id)
+        if await db.findUser(cursor, discord_id):
+            print('old')
+        else:
+            print('new')
+            await db.newUser(conn, cursor, discord_id)
 
+
+async def save():
+    pass
 
 # === bot code === #
 
@@ -56,12 +66,16 @@ async def on_ready():
 # ping command. really used for debugging. will be removed later
 @bot.command()
 async def ping(ctx: commands.Context):
+    user = ctx.author
+    await load(user.id)
     await ctx.send("pong")
 
 #========= server side commands ==========#
 @bot.command(name='dm')
 async def dm(ctx: commands.Context):
     user = ctx.author
+
+    await load(user.id)
 
     if await is_in_guild(ctx):
         # checks if the user does not have a dm channel aready
@@ -72,7 +86,7 @@ async def dm(ctx: commands.Context):
         
         await ctx.send(f'DM sent')
         await user.send(f'Hello! Type \'{config.COMMAND_PREFIX}help\' for DM commands')
-        await swallow_user_input(ctx)
+        
 
 @bot.command()
 async def help(ctx: commands.Context):

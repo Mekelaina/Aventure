@@ -95,4 +95,3 @@ def debug():
     print(map.rooms[1])
   
 
-debug()

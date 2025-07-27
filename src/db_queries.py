@@ -1,5 +1,6 @@
 
 from enum import StrEnum
+from multiprocessing import pool
 
 
 # All the queries regularly made as constants
@@ -12,16 +13,20 @@ class ExtEnum(StrEnum):
 
     # gets all enum values as a list
     @classmethod
-    def getValues(cls) -> list[str]:
-        return list(map(lambda c: c.value, cls))
+    async def getValues(cls) -> list[str]:
+        return list(pool.Pool.map_async(lambda c: c.value, cls))
     
     # gets all enum names as a list
     @classmethod
-    def getNames(cls) -> list[str]:
-        return list(map(lambda c: c.name, cls))
+    async def getNames(cls) -> list[str]:
+        rtn = []
+        
+        for i in cls:
+            rtn.append(i)
+        return  rtn #list(pool.Pool.map_async(lambda c: c.name, cls))
     
     @classmethod
-    def getValuesFromList(cls, names: list[str]) -> list[str]:
+    async def getValuesFromList(cls, names: list[str]) -> list[str]:
         return [cls[name].name for name in names]
     
 

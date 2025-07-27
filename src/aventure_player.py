@@ -12,6 +12,9 @@ class GameState(IntEnum):
     RUN_MENU = 3
     FINISH_MARKET = 4
 
+type statsData = tuple[int, int, int, int, int, int, int]
+type playerData = tuple[int, int, int, int, int, int, int, int, int, int, int, int]
+type equipmentData = tuple[int, int, int, int, int, int, int, int]
 # player stats in dataclass to make writing to DB cleaner
 @dataclass
 class GlobalStats:
@@ -22,6 +25,22 @@ class GlobalStats:
     totalItems: int = 0
     messagesSent: int = 0
 
+    def serialize(self) -> statsData:
+        return (self.dungeonsCleared, 
+                self.enemiesKilled, 
+                self.deaths, 
+                self.totalGold, 
+                self.totalItems, 
+                self.messagesSent)
+    
+    def deserialize(self, data: statsData) -> None:
+        self.dungeonsCleared, 
+        self.enemiesKilled, 
+        self.deaths, 
+        self.totalGold, 
+        self.totalItems, 
+        self.messagesSent = data
+
 
 # player data in a dataclass to make writing to DB easier
 @dataclass
@@ -29,15 +48,48 @@ class Data:
     level: int  = 1
     maxHealth: int  = 10
     currHealth: int = 10
-    isAlive: bool = 1
     baseAttack: int = 1
     baseDefence: int = 1
     exp: int = 0
     gold: int = 0
-    lastMove: Direction = Direction.NORTH
-    hasMoved: bool = False
+    isAlive: bool = 1
     map: int = -1
     room: int = -1
+    lastMove: Direction = Direction.NORTH
+    hasMoved: bool = False
+
+#order of values is the order their stored in db
+    def serialize(self) -> playerData:
+        return (self.level, 
+                self.maxHealth, 
+                self.currHealth,
+                self.baseAttack,
+                self.baseDefence,
+                self.exp,
+                self.gold,
+                int(self.isAlive),
+                self.map,
+                self.room,
+                int(self.lastMove),
+                int(self.hasMoved))
+    
+    def deserialize(self, data: playerData):
+        self.level, 
+        self.maxHealth, 
+        self.currHealth,
+        self.baseAttack,
+        self.baseDefence,
+        self.exp,
+        self.gold,
+        self.isAlive,
+        self.map,
+        self.room,
+        self.lastMove,
+        self.hasMoved = data
+
+        self.isAlive = bool(self.isAlive)
+        self.lastMove = Direction(self.lastMove)
+        self.hasMoved = bool(self.hasMoved)
 
 
 @dataclass
@@ -55,6 +107,7 @@ class EquipSlot(IntEnum):
     OFFHAND = 2
     CONSUMEABLE_1 = 3
     CONSUMEABLE_2 = 4
+
 
 @dataclass
 class Equipment():
@@ -103,7 +156,7 @@ class Equipment():
                 return True
     
     #return form for writing to DB
-    def serialize(self) -> tuple[int, int, int, int, int, int, int, int]:
+    def serialize(self) -> equipmentData:
         return (int(self.key),
                 self.weapon.itemID, 
                 self.armor.itemID, 
@@ -114,7 +167,7 @@ class Equipment():
                 self.consumeable2.count)
     
     #parse data from db back into object
-    def deserialize(self, data: tuple[int, int, int, int, int, int, int, int]):
+    def deserialize(self, data: equipmentData):
         #this is messy, but its just tuple unpacking
         self.key,
         self.weapon.itemID, 
@@ -240,7 +293,7 @@ class Player:
         #colated upon death or victory
         self.runInv: PlayerInventory = PlayerInventory()
         self.postInv: PlayerInventory = PlayerInventory()
-        self.equipment: Equipment = Equipment(
+        self.equipment: Equipment = Equipment(False,
             self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV)
     
     def takeDamage(self, dmg: int) -> None:
@@ -324,20 +377,24 @@ class Player:
         self.data.isAlive = True
         self.data.currHealth = self.data.maxHealth
         self.takeKey()
-            
-def debug():
-   p = PlayerInventory()
-   q = PlayerInventory()
-   p.addItem(InvItem(ItemID.RUSTY_SWORD, 1))
-   p.addItem(InvItem(ItemID.SMALL_POTION, 5))
-   p.addItem(InvItem(ItemID.NULL_ITEM, 0))
-   
-   print(p)
-   b = p.serialize()
-   print(b)
+    
+    
+    def save(self) -> list[int, playerData, equipmentData, 
+                          statsData, bytes, bytes]:
+        
+        player_data: list[int, playerData, equipmentData, 
+                          statsData, bytes, bytes] = []
+        player_data.append(self.state.value)
+        player_data.append(self.data.serialize())
+        player_data.append(self.equipment.serialize())
+        player_data.append(self.stats.serialize())
+        player_data.append(self.runInv.serialize())
+        player_data.append(self.postInv.serialize())
+        return player_data
+    
 
-   q.deserialize(b)
-   print(q)
+
+        
 
   
 

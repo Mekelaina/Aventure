@@ -3,7 +3,9 @@ from maps import getMap, MapID
 from aventure_map import Room, Map, Direction, Door
 from aventure_enemy import *
 from enemies import getEnemy, EnemyID
+import aventure_db as db
 from ascii_bulder import buildRoom
+#import sqlite3
 
 
 def checkForBattle(map: Map, player: Player) -> bool:
@@ -32,7 +34,7 @@ class Game:
         self.map: Map = Map(-1, [])
         self.enemy: GameEnemy = GameEnemy()
     
-    def loadGame(self):
+    def loadGame(self, discord_id: int):
         pass
 
     def saveGame(self):
@@ -44,14 +46,3 @@ class Game:
 
 
 
-def debug():
-    player: Player = Player()
-    enemy: GameEnemy = getEnemy(EnemyID.NO_ENEMY)
-    gmap: Map = getMap(0)
-    
-    
-
-
-
-
-debug()
