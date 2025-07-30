@@ -12,3 +12,5 @@ This is also a *<em>student project</em>*, if for some reason you wish to use, f
 <br><br><hr>
 Dependancies:
 - [discord.py](https://discordpy.readthedocs.io/en/stable/intro.html)
+- [aiopath](https://pypi.org/project/aiopath/)
+- [aiosqlite](https://github.com/omnilib/aiosqlite)

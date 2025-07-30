@@ -2,6 +2,7 @@ from enum import IntEnum
 from dataclasses import field
 import copy
 from items import ItemID
+import asyncio
 
 
 
@@ -24,7 +25,7 @@ class Door():
     #attempts to unlock the 'door'
     # if its not a wall, it succeeds and returns true
     # if it is a wall, it returns false
-    def unlock(self) -> bool:
+    async def unlock(self) -> bool:
         if self.next > -1:
             self.open = True
             return True
@@ -80,7 +81,19 @@ class Room():
             #room id and direction of the door the switch opens
             self.switch: Switch = switch
 
-        def serialize(self) :
+        async def removeItem(self):
+            self.hasLoot = False
+
+        async def removeKey(self):
+            self.hasKey = False
+
+        async def getDoor(self, dir: Direction) -> Door:
+            return self.layout[dir]
+        
+        async def flipSwitch(self):
+            self.switchToggled = True
+
+        async def serialize(self) :
             buff = bytearray()
             buff += self.id.to_bytes()
             buff += self.isExit.to_bytes()
@@ -167,19 +180,23 @@ class Room():
             
             
             
-def _chop( data: bytearray) -> tuple[bytearray, bytearray]:
-        count = 0
-        for i in range(len(data)):
-            if data[i] == 254:
-                count += 1
-            else:
-                count = 0
-            
-            if count == 2:
-                return (data[0:i-1], data[i+1:])
+async def _chop( data: bytearray) -> list[bytearray]:
+    # buff = bytearray()
+    # for idx, b in enumerate(data):
+    count = 0
+    #print(count)
+    #print(data)
+    for i in range(len(data)):
+        #print('dfsa')
+        await asyncio.sleep(0)
+        if data[i] == 254:
+            count += 1
+        else:
+            count = 0
+        
+        if count == 2:
+            return (data[0:i-1], data[i+1:])
 
-
-           
 
 class Map():
     """
@@ -187,40 +204,42 @@ class Map():
     Basically a map is an ID and a list of Room objects
     """
 
-    def __init__(self, id: int = 0, rooms: list[Room] = []):
+    def __init__(self, id: int = 0, rooms: list[Room] = [], intro=''):
         self.id: int = id
         #list of rooms. keep sequential. first in list is start
         self.rooms: list[Room] = rooms
+        self.intro = intro
     
     # return type is in quotes to get around classes not being defined
     #until class finishes delcaration. python quirk..
-    def newMap(self) -> 'Map':
+    async def newMap(self) -> 'Map':
         '''Returns a deepcopy of self. 
         useful for editable copies of static constants'''     
         return copy.deepcopy(self)
     
-    def serialize(self) -> bytes:
+    async def serialize(self) -> tuple[int, bytes]:
         buff = bytearray()
+        
         for room in self.rooms:
-            buff += room.serialize()
+            buff += await room.serialize()
             buff.append(254)
             buff.append(254)
-        return bytes(buff)
-
-    
-    
+        return (self.id, bytes(buff))
           
-    def deserialize(self, data: bytes) -> bool:
+    async def deserialize(self, data: tuple[int, bytes]) -> bool:
         buff = []
-        mut_data = bytearray(data)
         loop = True
+        
+        self.id = data[0]
+        mut_data = bytearray(data[1])
         while loop:
-            x, y = _chop(mut_data)
+            x, y = await _chop(mut_data)
+            await asyncio.sleep(0)
             buff.append(x)
             mut_data = y
             if not mut_data:
                 loop = False
-        
+       
         r: list[Room] = []
         for b in buff:
             room = Room()
@@ -229,8 +248,6 @@ class Map():
         self.rooms = r
             
         return True
-        
-
 
     def __str__(self):
         buff = '{{'
@@ -242,9 +259,20 @@ class Map():
         return buff
             
     
-def debug():
-    pass
     
-#debug()
+
+    async def getRoom(self, roomID: int) -> Room:
+        return self.rooms[roomID]
+    
+    async def setRoom(self, roomID: int, room: Room):
+        self.rooms[roomID] = room
+
+    async def isValidRoom(self, roomID) -> bool:
+        if roomID >= 0 and roomID < len(self.rooms):
+            #print(True)
+            return True
+        else:
+            #print(False)
+            return False
         
 

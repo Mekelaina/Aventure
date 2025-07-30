@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import IntEnum
 from items import *
+from aventure_equipslot import EquipSlot
 from aventure_map import Direction
 
 
@@ -12,6 +13,10 @@ class GameState(IntEnum):
     RUN_MENU = 3
     FINISH_MARKET = 4
 
+type statsData = tuple[int, int, int, int, int, int, int]
+type playerData = tuple[int, int, int, int, int, int, int, int, int, int, int, int]
+type equipmentData = tuple[int, int, int, int, int, int, int, int]
+type choiceData = tuple[int, int]
 # player stats in dataclass to make writing to DB cleaner
 @dataclass
 class GlobalStats:
@@ -22,6 +27,22 @@ class GlobalStats:
     totalItems: int = 0
     messagesSent: int = 0
 
+    async def serialize(self) -> statsData:
+        return (self.dungeonsCleared, 
+                self.enemiesKilled, 
+                self.deaths, 
+                self.totalGold, 
+                self.totalItems, 
+                self.messagesSent)
+    
+    async def deserialize(self, data: statsData) -> None:
+        (self.dungeonsCleared, 
+        self.enemiesKilled, 
+        self.deaths, 
+        self.totalGold, 
+        self.totalItems, 
+        self.messagesSent) = data
+
 
 # player data in a dataclass to make writing to DB easier
 @dataclass
@@ -29,15 +50,47 @@ class Data:
     level: int  = 1
     maxHealth: int  = 10
     currHealth: int = 10
-    isAlive: bool = 1
     baseAttack: int = 1
     baseDefence: int = 1
     exp: int = 0
     gold: int = 0
-    lastMove: Direction = Direction.NORTH
-    hasMoved: bool = False
+    isAlive: bool = True
     map: int = -1
     room: int = -1
+    lastMove: Direction = Direction.NORTH
+    hasMoved: bool = False
+
+#order of values is the order their stored in db
+    async def serialize(self) -> playerData:
+        return (self.level, 
+                self.maxHealth, 
+                self.currHealth,
+                self.baseAttack,
+                self.baseDefence,
+                self.exp,
+                self.gold,
+                int(self.isAlive),
+                self.map,
+                self.room,
+                self.lastMove.value,
+                int(self.hasMoved))
+    
+    async def deserialize(self, data: playerData):
+        #print(f'data coming in: {data}')
+        self.level = data[0]
+        self.maxHealth = data[1] 
+        self.currHealth = data[2]
+        self.baseAttack = data[3]
+        self.baseDefence = data[4]
+        self.exp = data[5]
+        self.gold = data[6]
+        self.isAlive = bool(data[7])
+        self.map = data[8]
+        self.room = data[9]
+        self.lastMove = Direction(data[10])
+        self.hasMoved = bool(data[11])
+
+        #print(f'after assing: {self.map}, {self.room}')
 
 
 @dataclass
@@ -49,12 +102,8 @@ class InvItem():
     def to_bytes(self) -> bytes:
         return bytes([self.itemID, self.count])
         
-class EquipSlot(IntEnum):
-    WEAPON = 0
-    ARMOR = 1
-    OFFHAND = 2
-    CONSUMEABLE_1 = 3
-    CONSUMEABLE_2 = 4
+
+
 
 @dataclass
 class Equipment():
@@ -65,7 +114,7 @@ class Equipment():
     consumeable1: InvItem
     consumeable2: InvItem
 
-    def equipItem(self, item: InvItem, slot: EquipSlot):
+    async def equipItem(self, item: InvItem, slot: EquipSlot):
         match slot:
             case EquipSlot.WEAPON:
                 self.weapon = item
@@ -79,7 +128,7 @@ class Equipment():
                 self.consumeable2 = item
             
     
-    def isEquiped(self, slot: EquipSlot) -> bool:
+    async def isEquiped(self, slot: EquipSlot) -> bool:
         match slot:
             case EquipSlot.WEAPON:
                 if self.weapon == Player.EMPTY_INV:
@@ -103,7 +152,7 @@ class Equipment():
                 return True
     
     #return form for writing to DB
-    def serialize(self) -> tuple[int, int, int, int, int, int, int, int]:
+    async def serialize(self) -> equipmentData:
         return (int(self.key),
                 self.weapon.itemID, 
                 self.armor.itemID, 
@@ -114,7 +163,7 @@ class Equipment():
                 self.consumeable2.count)
     
     #parse data from db back into object
-    def deserialize(self, data: tuple[int, int, int, int, int, int, int, int]):
+    async def deserialize(self, data: equipmentData):
         #this is messy, but its just tuple unpacking
         self.key,
         self.weapon.itemID, 
@@ -144,7 +193,7 @@ class PlayerInventory:
         return f'Inv:  {{{self.currSize}, {self.items}}}'
     
     #return form of data for writing to db
-    def serialize(self) -> bytes:
+    async def serialize(self) -> bytes:
         res = bytearray()
         res.extend(self.currSize.to_bytes(length=2))
         for i in range(self.currSize):
@@ -153,7 +202,7 @@ class PlayerInventory:
         return bytes(res)
     
     #read data from db and parse it into object variables
-    def deserialize(self, blob: bytes) -> bool:
+    async def deserialize(self, blob: bytes) -> bool:
         if len(blob) < 2:
             return False
         
@@ -170,14 +219,21 @@ class PlayerInventory:
     #checks if a given itemID is in the inventory
     # returns index if it exists
     # else -1
-    def hasItem(self, item: InvItem) -> int:
+    async def hasItem(self, item: InvItem) -> int:
         for i in range(self.currSize):
             if self.items[i].itemID == item.itemID:
                 return i
         return -1
+    
+    async def itemCount(self, item: InvItem) -> int:
+        for i in range(self.currSize):
+            if self.items[i].itemID == item.itemID:
+                return self.items[i].count
+        return 0
 
-    def addItem(self, item: InvItem):
-        i = self.hasItem(item)
+    async def addItem(self, item: InvItem):
+        print(f'adding Item {item}')
+        i = await self.hasItem(item)
         if i == -1:
             self.items.append(item)
             self.currSize += 1
@@ -205,12 +261,29 @@ class PlayerInventory:
             #this *should* never happen, if it does, somethings broken
             return -2
 
-    def removeItem(self, item: InvItem) -> bool:
-        i = self.hasItem(item)
+    async def removeItem(self, item: InvItem) -> bool:
+        i = await self.hasItem(item)
         if i >= 0:
             self.items.pop(i)
             self.currSize -= 1
+    
+    async def clearInv(self):
+        self.items.clear()
+        self.currSize = 0
 
+
+@dataclass
+class Choice:
+    doDelete: bool = 0
+    doNew: bool = 0
+
+    async def serialize(self) -> tuple[int, int]:
+        return (int(self.doDelete), int(self.doNew))
+    
+    async def deserialize(self, data: tuple[int, int]) -> None:
+        self.doDelete, self.doNew = data
+        self.doDelete = bool(self.doDelete)
+        self.doNew = bool(self.doNew)
 
 class Player:
     #empty inventory slot is a "null item"
@@ -240,9 +313,25 @@ class Player:
         #colated upon death or victory
         self.runInv: PlayerInventory = PlayerInventory()
         self.postInv: PlayerInventory = PlayerInventory()
-        self.equipment: Equipment = Equipment(
+        self.equipment: Equipment = Equipment(False,
             self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV, self.EMPTY_INV)
+        self.choice = Choice()
     
+    async def setRoom(self, romId: int):
+        self.data.room = romId
+    
+    async def getHasMoved(self) -> bool:
+        return self.data.hasMoved
+    
+    async def getLastMove(self) -> Direction:
+        return self.data.lastMove
+    
+    async def setHasMoved(self, value: bool):
+        self.data.hasMoved = value
+    
+    async def setLastMove(self, value: Direction):
+        self.data.lastMove = value
+
     def takeDamage(self, dmg: int) -> None:
         res = dmg - self.getDeffence()
         
@@ -257,17 +346,18 @@ class Player:
         if (self.data.currHealth + amt) >= self.data.maxHealth:
             self.data.currHealth = self.data.maxHealth
     
-    def equipItem(self, itemID: int, count: int, slot: EquipSlot) -> bool:
-        itemData: AventureItem = getEquipable(itemID)
-        if self.canEquipItem(itemData, slot):
-            self.equipment.equipItem(InvItem(itemID, count), slot)
+    async def equipItem(self, itemID: int, count: int, slot: EquipSlot) -> bool:
+        itemData: AventureItem = await getItemEquipable(itemID)
+        canEquip = await self.canEquipItem(itemData, slot)
+        if canEquip:
+            await self.equipment.equipItem(InvItem(itemID, count), slot)
             return True
         return False
     
-    def unequipItem(self, slot: EquipSlot) -> None:
-        self.equipment.equipItem(self.EMPTY_INV, slot)
+    async def unequipItem(self, slot: EquipSlot) -> None:
+        await self.equipment.equipItem(self.EMPTY_INV, slot)
          
-    def canEquipItem(self, itemEquipVal: Equipable, itemSlot: EquipSlot) -> bool:
+    async def canEquipItem(self, itemEquipVal: Equipable, itemSlot: EquipSlot) -> bool:
         self.VALID_EQUIPS
         match (itemEquipVal.value, itemSlot.value):
             case (x, y) if (x, y) in self.VALID_EQUIPS:
@@ -295,49 +385,79 @@ class Player:
             self.data.gold -= amt
             return True
     
-    def getAttack(self) -> int:
+    async def getAttack(self) -> int:
         if self.equipment.isEquiped(EquipSlot.WEAPON):
-            return self.data.baseAttack + getMod(self.equipment.weapon.itemID)
+            return self.data.baseAttack + getItemMod(self.equipment.weapon.itemID)
         else:
             return self.data.baseAttack
     
-    def getDeffence(self) -> int:
+    async def getDeffence(self) -> int:
         if self.equipment.isEquiped(EquipSlot.ARMOR):
-            return self.data.baseDefence + getMod(self.equipment.armor.itemID)
+            return self.data.baseDefence + await getItemMod(self.equipment.armor.itemID)
         else:
             return self.data.baseDefence
         
-    def hasKey(self) -> bool:
+    async def hasKey(self) -> bool:
         return self.equipment.key
     
-    def giveKey(self):
+    async def giveKey(self):
         self.equipment.key = True
     
-    def takeKey(self):
+    async def takeKey(self):
         self.equipment.key = False
     
-    def restart(self, map: int):
+    async def restart(self, map: int):
         self.state = GameState.RUN_DUNGEON
         self.data.map = map
         self.data.room = 0
         self.data.hasMoved = False
         self.data.isAlive = True
         self.data.currHealth = self.data.maxHealth
-        self.takeKey()
-            
-def debug():
-   p = PlayerInventory()
-   q = PlayerInventory()
-   p.addItem(InvItem(ItemID.RUSTY_SWORD, 1))
-   p.addItem(InvItem(ItemID.SMALL_POTION, 5))
-   p.addItem(InvItem(ItemID.NULL_ITEM, 0))
-   
-   print(p)
-   b = p.serialize()
-   print(b)
+        
+        await self.runInv.clearInv()
+        await self.runInv.addItem(InvItem(ItemID.CLOTHES, 1))
+        await self.runInv.addItem(InvItem(ItemID.POCKET_KNIFE, 1))
+        await self.takeKey()
+    
+    async def getInv(self):
+        return self.runInv
+    
+    async def getEquipment(self):
+        return self.equipment
+    
+    async def giveItem(self, id: int, count: int):
+        await self.runInv.addItem(InvItem(id, count))
+    
+    async def save(self) -> list[int, playerData, equipmentData, 
+                          statsData, bytes, bytes, choiceData]:
+        player_data = []
+        player_data.append(self.state)
+        
+        player_data.append(await self.data.serialize())
+        
+        player_data.append(await self.stats.serialize())
+        
+        player_data.append(await self.equipment.serialize())
+       
+        player_data.append(await self.runInv.serialize())
+       
+        player_data.append(await self.postInv.serialize())
 
-   q.deserialize(b)
-   print(q)
+        player_data.append(await self.choice.serialize())
+        
+        return player_data
+    
+    async def load(self, data: list[int, playerData, statsData, 
+                          equipmentData, bytes, bytes, choiceData]):
+        self.state = data.pop(0)
+        await self.data.deserialize(data.pop(0))
+        await self.stats.deserialize(data.pop(0))
+        await self.equipment.deserialize(data.pop(0))
+        await self.runInv.deserialize(data.pop(0))
+        await self.postInv.deserialize(data.pop(0))
+
+
+        
 
   
 

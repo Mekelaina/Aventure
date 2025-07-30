@@ -35,7 +35,7 @@ EW_DOOR_END: int = 3
 # this function returns an ascii depiction of the room from the provided
 # room and direction the player entered from
 
-def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
+async def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
     buff: list[str] = [[SPACE for i in range(COL)] for j in range(ROW)] 
     
     for i, x in room.layout.items():
@@ -44,19 +44,26 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
                 if x.next != -1: 
                     if x.open:
                         for c in range(COL):
-                            if c >= 4 and c <= 8:
+                            if c >= NS_DOOR_START and c <= NS_DOOR_END:
                                 buff[0][c] = UNLOCKED
                             else:
                                 buff[0][c] = WALL
                     else:
                         for c in range(COL):
-                            if c >= 4 and c <= 8:
+                            if c >= NS_DOOR_START and c <= NS_DOOR_END:
                                 buff[0][c] = NS_LOCKED
                             else:
                                 buff[0][c] = WALL
                 else:
-                    for c in range(COL):    
-                        buff[0][c] = WALL
+                    if  x.open:
+                        for c in range(COL):    
+                            if c >= NS_DOOR_START and c <= NS_DOOR_END:
+                                buff[0][c] = SPACE
+                            else:
+                                buff[0][c] = WALL
+                    else:
+                        for c in range(COL):    
+                            buff[0][c] = WALL
 #================ end North ================
             case Direction.SOUTH:
                 if x.next != -1: 
@@ -73,8 +80,15 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
                             else:
                                 buff[ROW-1][c] = WALL
                 else:
-                    for c in range(COL):    
-                        buff[ROW-1][c] = WALL
+                    if x.open:
+                        for c in range(COL):
+                            if c >= NS_DOOR_START and c <= NS_DOOR_END:
+                                buff[ROW-1][c] = SPACE
+                            else:
+                                buff[ROW-1][c] = WALL
+                    else:
+                        for c in range(COL):    
+                            buff[ROW-1][c] = WALL
 #================ end South ================
             case Direction.EAST:
                 if x.next != -1: 
@@ -91,8 +105,15 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
                             else:
                                 buff[c][COL-1] = WALL
                 else:
-                    for c in range(ROW):    
-                        buff[c][COL-1] = WALL
+                    if x.open:
+                        for c in range(ROW):    
+                            if c >= EW_DOOR_START and c <= EW_DOOR_END:
+                                buff[c][COL-1] = SPACE
+                            else:
+                                buff[c][COL-1] = WALL
+                    else:
+                        for c in range(ROW):    
+                            buff[c][COL-1] = WALL
 #================ end East ================
             case Direction.WEST:
                 if x.next != -1: 
@@ -109,8 +130,15 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
                             else:
                                 buff[c][0] = WALL
                 else:
-                    for c in range(ROW):    
-                        buff[c][0] = WALL
+                    if x.open:
+                        for c in range(ROW):    
+                            if c >= EW_DOOR_START and c <= EW_DOOR_END:
+                                buff[c][0] = SPACE
+                            else:
+                                buff[c][0] = WALL
+                    else:
+                        for c in range(ROW):    
+                            buff[c][0] = WALL
 #================ end West ================
 
     if room.id == 0 and not moved:
@@ -129,8 +157,9 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
                 buff[ROW_MID][COL-3] = PLAYER
         
         if room.hasEnemy:
-            e = getEnemy(room.enemy).ascii
-            buff[int(ROW/2)-1][int((COL-1)/2)] = e
+            e = await getEnemy(room.enemy)
+
+            buff[int(ROW/2)-1][int((COL-1)/2)] = e.ascii
         
         if room.hasKey:
             buff[1][2] = KEY
@@ -140,28 +169,16 @@ def buildRoom( room: Room, moved: bool, enter: Direction = Direction.NORTH):
             #set this char to untoggle switch if switchToggled is false
             #otherwise set it to toggled switch
             buff[1][COL-3] = SWITCH if not room.switchToggled else SWITCH_TOGGLED
-        if room.hasLoot:
-            buff[ROW-2][2] = TREASURE
+        
+    if room.hasLoot:
+        buff[ROW-2][2] = TREASURE
 
-    res = ''
+    res = '```\n'
     for i in range(ROW):
+        #res += '"" '
         for j in range(COL):
             res += buff[i][j]
         res += '\n'
+    res = res[:-1]
+    res += '```'
     return res
-    #for i in bu
-    # if room.id == 0:
-    #     buff[(self.ROW/2)-1][(self.COL-1)/2] = self.PLAYER
-    #     for dir in Direction:
-    #         match dir:
-    #             case Direction.NORTH:
-    #                 for i in range(self.COL):
-    #                     buff[][]
-    #             case Direction.SOUTH:
-    #                 pass
-    #             case Direction.EAST:
-    #                 pass
-    #             case Direction.WEST:
-    #                 pass
-    # else:
-    #     pass
