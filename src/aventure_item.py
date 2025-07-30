@@ -27,8 +27,9 @@ class AventureItem:
 
     # this mess is just to autoincrement ID each time the constructor is called
     # id: int = field(default_factory=lambda counter=count(): next(counter))
-    name: str = 'NULL'
-    description: str = 'NULL'
+    id: int = 0
+    name: str = 'empty'
+    description: str = ''
     value: int = 0
     mod: int = 0
     use: Usecase = Usecase.NO_USE

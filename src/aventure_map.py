@@ -25,7 +25,7 @@ class Door():
     #attempts to unlock the 'door'
     # if its not a wall, it succeeds and returns true
     # if it is a wall, it returns false
-    def unlock(self) -> bool:
+    async def unlock(self) -> bool:
         if self.next > -1:
             self.open = True
             return True
@@ -80,6 +80,18 @@ class Room():
             self.hasKey = hasKey
             #room id and direction of the door the switch opens
             self.switch: Switch = switch
+
+        async def removeItem(self):
+            self.hasLoot = False
+
+        async def removeKey(self):
+            self.hasKey = False
+
+        async def getDoor(self, dir: Direction) -> Door:
+            return self.layout[dir]
+        
+        async def flipSwitch(self):
+            self.switchToggled = True
 
         async def serialize(self) :
             buff = bytearray()
@@ -186,22 +198,21 @@ async def _chop( data: bytearray) -> list[bytearray]:
             return (data[0:i-1], data[i+1:])
 
 
-           
-
 class Map():
     """
     Map repersentation for the game.
     Basically a map is an ID and a list of Room objects
     """
 
-    def __init__(self, id: int = 0, rooms: list[Room] = []):
+    def __init__(self, id: int = 0, rooms: list[Room] = [], intro=''):
         self.id: int = id
         #list of rooms. keep sequential. first in list is start
         self.rooms: list[Room] = rooms
+        self.intro = intro
     
     # return type is in quotes to get around classes not being defined
     #until class finishes delcaration. python quirk..
-    def newMap(self) -> 'Map':
+    async def newMap(self) -> 'Map':
         '''Returns a deepcopy of self. 
         useful for editable copies of static constants'''     
         return copy.deepcopy(self)
@@ -214,34 +225,21 @@ class Map():
             buff.append(254)
             buff.append(254)
         return (self.id, bytes(buff))
-
-    
-    
           
     async def deserialize(self, data: tuple[int, bytes]) -> bool:
         buff = []
-        
-        #mut_data = list(data)
-        
         loop = True
         
         self.id = data[0]
         mut_data = bytearray(data[1])
-        #print("m")
         while loop:
-            #print('1')
             x, y = await _chop(mut_data)
-            #print('2')
             await asyncio.sleep(0)
-            #print('3')
             buff.append(x)
             mut_data = y
             if not mut_data:
                 loop = False
-
-        
-            
-        #print("w")
+       
         r: list[Room] = []
         for b in buff:
             room = Room()
@@ -250,8 +248,6 @@ class Map():
         self.rooms = r
             
         return True
-        
-
 
     def __str__(self):
         buff = '{{'
@@ -263,9 +259,20 @@ class Map():
         return buff
             
     
-def debug():
-    pass
     
-#debug()
+
+    async def getRoom(self, roomID: int) -> Room:
+        return self.rooms[roomID]
+    
+    async def setRoom(self, roomID: int, room: Room):
+        self.rooms[roomID] = room
+
+    async def isValidRoom(self, roomID) -> bool:
+        if roomID >= 0 and roomID < len(self.rooms):
+            #print(True)
+            return True
+        else:
+            #print(False)
+            return False
         
 
