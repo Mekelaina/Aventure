@@ -1,5 +1,7 @@
 from enum import IntEnum
 
+#this class is just a bodge to solve an import conflict 
+
 class EquipSlot(IntEnum):
     WEAPON = 0
     ARMOR = 1
