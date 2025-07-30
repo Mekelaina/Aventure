@@ -37,7 +37,26 @@ how -- An explination on how to play.
 delete -- delete your progress and records.
 help -- Print this message.'''
 
-DM_HELP = f'''TODO: DM HELP'''
+DM_HELP = f'''Command Prefix: `{config.COMMAND_PREFIX}`
+---- DM Commands ----
+----  Main Menu  ----
+menu -- print the main menu
+new -- Start a new run!
+resume -- pick up where you left off
+stats -- view your stats
+----   Dungeon   ----
+key -- print a key of each dungeon character
+room -- reprint your current room
+look -- look around the room
+look (item) -- look at an item in the room
+inv -- disply inventory
+inv (item) -- examine item in inventory
+equip -- equip item in inventory
+take (item) -- take an item and put it in inventory
+enemy -- get description of enemy
+move (n/e/s/w) -- move north, east, south, west
+switch -- flip switch in room.
+'''
 
 MAIN_MENU = '''---- Aventure ----
 new -- Start a new run!
